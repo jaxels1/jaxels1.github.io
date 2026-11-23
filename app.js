@@ -764,28 +764,28 @@ diffTabs.forEach((btn) => {
 
 const GUARD_MODES = {
   filtered: {
-    file: "24-task A/B + 63-session replay",
-    countText: "24/24 pass · p50 1.95ms",
+    file: "GPT-6.1 Terra live A/B + 63-session replay",
+    countText: "-78.3% bytes · p50 1.95ms",
     compressed: true,
     codeHtml:
-      `<span class="d-add-cyan">✓ Live A/B (incl. rebound): 443k → 22k tok (-95%)</span>\n` +
-      `<span class="d-add-cyan">✓ AST outline on >500L + PreCompact reset</span>\n` +
-      `<span class="d-add-cyan">✓ 63-session replay: -55.5% uncached burn</span>\n` +
-      `<span class="d-ctx">  --pipe preserves allowlists · 97.8% KV cache hit</span>`,
-    verdictText: "100% task pass rate · sub-2ms daemon",
-    verdictMeta: "ab_benchmark.py",
+      `<span class="d-add-cyan">✓ GPT-6.1 Terra T2: 68.2k → 43.4k in tok (-36.4%)</span>\n` +
+      `<span class="d-add-cyan">✓ Live tool output: 31.6 KB → 6.9 KB (-78.3%)</span>\n` +
+      `<span class="d-add-cyan">✓ 24-task A/B: 24/24 pass · 443k → 22k tok (-95%)</span>\n` +
+      `<span class="d-ctx">  63-session replay: -55.5% uncached · 97.8% KV cache</span>`,
+    verdictText: "100% pass rate · 20,276 tok saved in 2 live tasks",
+    verdictMeta: "live_codex_ab.py",
   },
   raw: {
-    file: "unfiltered baseline (no guards)",
-    countText: "443k A/B · 26.56M replay",
+    file: "GPT-6.1 Terra baseline (token-guard OFF)",
+    countText: "150.1k in tok · 31.6 KB out",
     compressed: false,
     codeHtml:
-      `<span class="d-add-risk">+ Full >500-line files & lockfiles dumped raw</span>\n` +
-      `<span class="d-add-risk">+ Unbounded rg matches across node_modules & dist</span>\n` +
-      `<span class="d-add-risk">+ 2,951 duplicate file reads + 47.6 MB raw stdout</span>\n` +
+      `<span class="d-add-risk">+ T2 noisy test: 68.2k in tok · 28.3 KB raw stdout</span>\n` +
+      `<span class="d-add-risk">+ T1 large file: 3.3 KB output · 5 total tool calls</span>\n` +
+      `<span class="d-add-risk">+ 2,951 duplicate file reads across 63 sessions</span>\n` +
       `<span class="d-ctx">  26,560,584 fresh uncached input tokens burned</span>`,
-    verdictText: "59.0 MB avoidable bloat across 63 sessions",
-    verdictMeta: "no guards active",
+    verdictText: "20,276 extra tokens on T1+T2 · 59.0 MB replay bloat",
+    verdictMeta: "token-guard OFF",
   },
 };
 

@@ -1,28 +1,238 @@
-// Live interactive 2D interruptible spring physics + diff switcher + copy triggers
+// Awwwards-grade spring-pixel field, magnetic pills, scroll-velocity marquee, and 2D spring playground
 
 const prefersReduced = () =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-// 1. Copy buttons with clean verb -> feedback confirmation
+// ---------------------------------------------------------------------------
+// 1. Full-Bleed Hero Interactive Spring-Pixel <canvas> + HUD Pointer Coords
+// ---------------------------------------------------------------------------
+const pixelCanvas = document.getElementById("pixel-spring-canvas");
+const hudCoords = document.getElementById("hud-coords");
+const lineA = document.getElementById("line-a");
+const lineB = document.getElementById("line-b");
+
+if (pixelCanvas) {
+  const ctx = pixelCanvas.getContext("2d");
+  const SPACING = 30;
+  let width = 0;
+  let height = 0;
+  let dpr = 1;
+  let dots = [];
+
+  const pointer = { x: -9999, y: -9999, active: false };
+  const ripples = [];
+
+  function buildGrid() {
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    width = pixelCanvas.clientWidth || window.innerWidth;
+    height = pixelCanvas.clientHeight || window.innerHeight;
+    pixelCanvas.width = Math.round(width * dpr);
+    pixelCanvas.height = Math.round(height * dpr);
+    dots = [];
+    const cols = Math.floor(width / SPACING);
+    const rows = Math.floor(height / SPACING);
+    const offsetX = (width - (cols - 1) * SPACING) / 2;
+    const offsetY = (height - (rows - 1) * SPACING) / 2;
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        dots.push({
+          bx: offsetX + c * SPACING,
+          by: offsetY + r * SPACING,
+          ox: 0,
+          oy: 0,
+          vx: 0,
+          vy: 0,
+        });
+      }
+    }
+  }
+
+  function triggerRipple(cx, cy, strength = 46) {
+    if (prefersReduced()) return;
+    ripples.push({ x: cx, y: cy, r: 0, speed: 620, strength });
+  }
+
+  let prevCanvasT = performance.now();
+  function drawPixelField(now) {
+    const dt = Math.min(0.032, (now - prevCanvasT) / 1000);
+    prevCanvasT = now;
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, width, height);
+
+    // Advance shockwave ripples
+    for (let i = ripples.length - 1; i >= 0; i--) {
+      ripples[i].r += ripples[i].speed * dt;
+      if (ripples[i].r > Math.hypot(width, height)) {
+        ripples.splice(i, 1);
+      }
+    }
+
+    const reduced = prefersReduced();
+    const STIFF = 175;
+    const DAMP = 11;
+    const RADIUS = 155;
+
+    for (let i = 0; i < dots.length; i++) {
+      const d = dots[i];
+      if (!reduced) {
+        // Mouse repulsion spring impulse
+        if (pointer.active) {
+          const dx = d.bx + d.ox - pointer.x;
+          const dy = d.by + d.oy - pointer.y;
+          const dist = Math.hypot(dx, dy);
+          if (dist < RADIUS && dist > 0.1) {
+            const force = (1 - dist / RADIUS) * 2400;
+            d.vx += (dx / dist) * force * dt;
+            d.vy += (dy / dist) * force * dt;
+          }
+        }
+
+        // Click / opening shockwave ripples
+        for (let rIdx = 0; rIdx < ripples.length; rIdx++) {
+          const rp = ripples[rIdx];
+          const dx = d.bx - rp.x;
+          const dy = d.by - rp.y;
+          const dist = Math.hypot(dx, dy);
+          const band = Math.abs(dist - rp.r);
+          if (band < 42 && dist > 1) {
+            const kick = (1 - band / 42) * rp.strength;
+            d.vx += (dx / dist) * kick * 18 * dt;
+            d.vy += (dy / dist) * kick * 18 * dt;
+          }
+        }
+
+        // Harmonic spring return to rest lattice
+        const ax = -STIFF * d.ox - DAMP * d.vx;
+        const ay = -STIFF * d.oy - DAMP * d.vy;
+        d.vx += ax * dt;
+        d.vy += ay * dt;
+        d.ox += d.vx * dt;
+        d.oy += d.vy * dt;
+      }
+
+      const disp = Math.hypot(d.ox, d.oy);
+      const energy = Math.min(1, disp / 16);
+
+      // Tint displaced pixels from ink toward International Vermilion (#E84A27)
+      if (energy > 0.14) {
+        const r = Math.round(11 + energy * (232 - 11));
+        const g = Math.round(12 + energy * (74 - 12));
+        const b = Math.round(13 + energy * (39 - 13));
+        ctx.fillStyle = `rgba(${r},${g},${b},${0.22 + energy * 0.72})`;
+        const size = 3 + energy * 2.5;
+        ctx.fillRect(d.bx + d.ox - size / 2, d.by + d.oy - size / 2, size, size);
+      } else {
+        ctx.fillStyle = "rgba(11, 12, 13, 0.16)";
+        ctx.fillRect(d.bx - 1, d.by - 1, 2.5, 2.5);
+      }
+    }
+
+    requestAnimationFrame(drawPixelField);
+  }
+
+  buildGrid();
+  window.addEventListener("resize", buildGrid);
+
+  // Subtle opening pulse across canvas on load
+  triggerRipple(width * 0.5, height * 0.45, 38);
+
+  const heroBand = document.querySelector(".band-hero");
+  heroBand?.addEventListener("pointermove", (e) => {
+    const rect = heroBand.getBoundingClientRect();
+    pointer.x = e.clientX - rect.left;
+    pointer.y = e.clientY - rect.top;
+    pointer.active = true;
+    if (hudCoords) {
+      const px = String(Math.max(0, Math.round(e.clientX))).padStart(4, "0");
+      const py = String(Math.max(0, Math.round(e.clientY))).padStart(4, "0");
+      hudCoords.textContent = `X:${px} Y:${py}`;
+    }
+  });
+
+  heroBand?.addEventListener("pointerleave", () => {
+    pointer.active = false;
+  });
+
+  heroBand?.addEventListener("pointerdown", (e) => {
+    if (e.target.closest("button, a")) return;
+    const rect = heroBand.getBoundingClientRect();
+    triggerRipple(e.clientX - rect.left, e.clientY - rect.top, 64);
+  });
+
+  requestAnimationFrame(drawPixelField);
+}
+
+// ---------------------------------------------------------------------------
+// 2. Scroll-Velocity Kinetic Marquee + Parallax Hero Lines
+// ---------------------------------------------------------------------------
+const marqueeTrack = document.getElementById("marquee-track");
+let marqueeOffset = 0;
+let lastScrollY = window.scrollY;
+let scrollVelocity = 0;
+
+function tickScrollMotion() {
+  const currY = window.scrollY;
+  const deltaY = currY - lastScrollY;
+  lastScrollY = currY;
+  scrollVelocity = scrollVelocity * 0.88 + deltaY * 0.12;
+
+  if (!prefersReduced()) {
+    if (marqueeTrack) {
+      const halfW = marqueeTrack.scrollWidth / 2 || 800;
+      const speed = 0.75 + Math.min(8, Math.abs(scrollVelocity) * 0.35);
+      marqueeOffset = (marqueeOffset - speed) % halfW;
+      const skew = Math.max(-7, Math.min(7, scrollVelocity * 0.25));
+      marqueeTrack.style.transform = `translate3d(${marqueeOffset.toFixed(1)}px, 0, 0) skewX(${skew.toFixed(2)}deg)`;
+    }
+
+    if (lineA && lineB && currY < window.innerHeight * 1.2) {
+      lineA.style.transform = `translate3d(${(-currY * 0.08).toFixed(1)}px, 0, 0)`;
+      lineB.style.transform = `translate3d(${(currY * 0.08).toFixed(1)}px, 0, 0)`;
+    }
+  }
+  requestAnimationFrame(tickScrollMotion);
+}
+requestAnimationFrame(tickScrollMotion);
+
+// ---------------------------------------------------------------------------
+// 3. Magnetic Cursor-Attracted Pills + 1-Click Copy
+// ---------------------------------------------------------------------------
+document.querySelectorAll(".mag-pill").forEach((pill) => {
+  pill.addEventListener("pointermove", (e) => {
+    if (prefersReduced()) return;
+    const rect = pill.getBoundingClientRect();
+    const dx = (e.clientX - (rect.left + rect.width / 2)) * 0.18;
+    const dy = (e.clientY - (rect.top + rect.height / 2)) * 0.24;
+    pill.style.transform = `translate3d(${dx.toFixed(1)}px, ${dy.toFixed(1)}px, 0)`;
+  });
+  pill.addEventListener("pointerleave", () => {
+    pill.style.transform = "translate3d(0, 0, 0)";
+  });
+});
+
 document.querySelectorAll(".copy-trigger").forEach((btn) => {
   btn.addEventListener("click", async () => {
     const text = btn.dataset.copy || "";
     try {
       await navigator.clipboard.writeText(text);
     } catch {
-      // Ignore clipboard permission errors cleanly
+      // Ignore clipboard failures gracefully
     }
-    const tag = btn.querySelector(".copy-tag") || btn.querySelector("span") || btn.querySelector("code");
-    if (!tag) return;
-    const prev = tag.textContent;
-    tag.textContent = "Copied";
+    const label = btn.querySelector(".pill-state") || btn.querySelector("span") || btn.querySelector("code");
+    if (!label) return;
+    const prev = label.textContent;
+    label.textContent = "Copied";
     window.setTimeout(() => {
-      tag.textContent = prev;
+      label.textContent = prev;
     }, 1300);
   });
 });
 
-// 2. Real 2D Interruptible Spring Physics Playground
+// ---------------------------------------------------------------------------
+// 4. Live 2D Interruptible Spring Physics Playground
+// ---------------------------------------------------------------------------
 const canvas = document.getElementById("spring-canvas");
 const puck = document.getElementById("spring-puck");
 const trace = document.getElementById("spring-trace");
@@ -39,7 +249,6 @@ if (canvas && puck && trace && velReadout && stateReadout) {
   let stiffness = Number(stiffnessInput.value);
   let damping = Number(dampingInput.value);
 
-  // Physics state in canvas-local px
   let x = 40;
   let y = 100;
   let vx = 0;
@@ -56,13 +265,12 @@ if (canvas && puck && trace && velReadout && stateReadout) {
   let lastSampleT = 0;
   let rafId = null;
 
-  // Rolling displacement trace history
   const traceHistory = new Array(80).fill(36);
 
   function getBounds() {
-    const w = canvas.clientWidth || 560;
+    const w = canvas.clientWidth || 540;
     const h = canvas.clientHeight || 310;
-    const pw = puck.offsetWidth || 176;
+    const pw = puck.offsetWidth || 174;
     const ph = puck.offsetHeight || 82;
     const cy = Math.round((h - ph) / 2);
     const leftX = Math.round(w * 0.26 - pw / 2);
@@ -158,7 +366,6 @@ if (canvas && puck && trace && velReadout && stateReadout) {
     targetY = b.cy;
   }
 
-  // Initialize centered on right detent so user sees target left detent invite a flick
   const initB = getBounds();
   detentIndex = 1;
   x = initB.rightX;
@@ -271,7 +478,9 @@ if (canvas && puck && trace && velReadout && stateReadout) {
   });
 }
 
-// 3. Interactive Pre-Pull Diff Switcher
+// ---------------------------------------------------------------------------
+// 5. Interactive Pre-Pull Diff Switcher
+// ---------------------------------------------------------------------------
 const DIFF_MODES = {
   risky: {
     file: "definitely-not-a-virus/SKILL.md",

@@ -24,10 +24,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=2" />
+    <link rel="stylesheet" href="./styles.css?v=3" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -74,8 +74,11 @@
     </script>
   </head>
   <body>
-    <header class="site-header">
-      <div class="header-inner">
+    <!-- HERO: Architectural Paper + Full-Bleed Spring-Pixel Canvas + Monumental Kinetic Type -->
+    <section id="top" class="band-hero">
+      <canvas id="pixel-spring-canvas" aria-hidden="true"></canvas>
+
+      <header class="hero-header">
         <a class="brand" href="#top">
           <svg
             width="24"
@@ -84,125 +87,137 @@
             shape-rendering="crispEdges"
             aria-hidden="true"
           >
-            <rect width="12" height="12" rx="2" fill="#181A1D" />
-            <rect x="4" y="2" width="5" height="2" fill="#F5F5F7" />
-            <rect x="6" y="4" width="2" height="4" fill="#F5F5F7" />
+            <rect width="12" height="12" rx="2" fill="#0B0C0D" />
+            <rect x="4" y="2" width="5" height="2" fill="#ECEAE4" />
+            <rect x="6" y="4" width="2" height="4" fill="#ECEAE4" />
             <rect x="3" y="7" width="2" height="2" fill="#E84A27" />
             <rect x="4" y="8" width="4" height="2" fill="#E84A27" />
           </svg>
           <span>jaxels</span>
         </a>
 
-        <nav class="header-nav" aria-label="Primary">
+        <div class="hud-coords" id="hud-coords" aria-hidden="true">X:0000 Y:0000</div>
+
+        <nav class="hero-nav" aria-label="Primary">
           <a href="#tactile-ui">tactile-ui</a>
           <a href="#skill-sync">skill-sync</a>
           <a href="https://github.com/jaxels1" target="_blank" rel="noreferrer">GitHub</a>
         </nav>
+      </header>
+
+      <div class="hero-center">
+        <h1 class="display-title">
+          <span class="title-mask"><span class="title-line line-a" id="line-a">AGENT SKILLS</span></span>
+          <span class="title-mask"><span class="title-line line-b" id="line-b">YOU CAN FEEL.</span></span>
+        </h1>
       </div>
-    </header>
 
-    <main id="top" class="page">
-      <!-- HERO: Alone on the first screen, asymmetrical split with live 2D Spring Playground -->
-      <section class="hero">
-        <div class="hero-copy">
-          <h1>Agent skills you can feel.</h1>
-          <p class="hero-lead">
-            <code>tactile-ui</code> teaches coding agents interruptible spring physics,
-            defensive CSS, and layout restraint. <code>skill-sync</code> audits, diffs, and
-            safely updates every skill you install.
+      <div class="hero-footer">
+        <p class="hero-sub">
+          <code>tactile-ui</code> for physical interfaces. <code>skill-sync</code> for
+          security-gated updates. Sweep or click the pixel field above.
+        </p>
+
+        <div class="magnetic-group">
+          <button
+            type="button"
+            class="mag-pill copy-trigger"
+            data-copy="npx skills add jaxels1/tactile-ui"
+          >
+            <code>npx skills add jaxels1/tactile-ui</code>
+            <span class="pill-state">Copy</span>
+          </button>
+          <button
+            type="button"
+            class="mag-pill mag-pill-accent copy-trigger"
+            data-copy="npx skills add jaxels1/skill-sync"
+          >
+            <code>npx skills add jaxels1/skill-sync</code>
+            <span class="pill-state">Copy</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCROLL-VELOCITY KINETIC MARQUEE BAND -->
+    <div class="marquee-band" aria-hidden="true">
+      <div class="marquee-track" id="marquee-track">
+        <span>TACTILE-UI &mdash; INTERRUPTIBLE SPRINGS &mdash; DEFENSIVE CSS &mdash; SKILL-SYNC &mdash; PRE-PULL SECURITY GATE &mdash; PIXEL CRAFT &mdash; </span>
+        <span>TACTILE-UI &mdash; INTERRUPTIBLE SPRINGS &mdash; DEFENSIVE CSS &mdash; SKILL-SYNC &mdash; PRE-PULL SECURITY GATE &mdash; PIXEL CRAFT &mdash; </span>
+      </div>
+    </div>
+
+    <!-- CHAPTER 1: tactile-ui (Warm Architectural Ivory) -->
+    <section id="tactile-ui" class="band-ivory">
+      <div class="container">
+        <div class="chapter-head">
+          <h2>tactile-ui</h2>
+          <p class="chapter-lead">
+            Distills Apple's fluid interface physics, defensive CSS layout guards, OKLCH
+            color contrast, and React <code>&lt;ViewTransition&gt;</code> into concrete rules
+            agents verify before shipping.
           </p>
-
-          <div class="install-stack">
-            <button
-              type="button"
-              class="cli-copy copy-trigger"
-              data-copy="npx skills add jaxels1/tactile-ui"
-            >
-              <code>npx skills add jaxels1/tactile-ui</code>
-              <span class="copy-tag">Copy</span>
-            </button>
-            <button
-              type="button"
-              class="cli-copy copy-trigger"
-              data-copy="npx skills add jaxels1/skill-sync"
-            >
-              <code>npx skills add jaxels1/skill-sync</code>
-              <span class="copy-tag">Copy</span>
-            </button>
-          </div>
         </div>
 
-        <!-- Interactive 2D Interruptible Spring Stage (focal point) -->
-        <div class="spring-lab">
-          <div class="lab-top">
-            <span class="lab-name">Interactive spring response</span>
-            <label class="reduce-toggle">
-              <input type="checkbox" id="reduce-motion-toggle" />
-              <span>Reduce motion</span>
-            </label>
-          </div>
-
-          <div class="spring-canvas" id="spring-canvas">
-            <!-- Two magnetic detent reticles (left / right) -->
-            <div class="detent detent-a" aria-hidden="true"></div>
-            <div class="detent detent-b" aria-hidden="true"></div>
-
-            <!-- Live SVG displacement curve plotted from real spring velocity -->
-            <svg class="trace-svg" viewBox="0 0 400 72" preserveAspectRatio="none" aria-hidden="true">
-              <line x1="0" y1="36" x2="400" y2="36" stroke="rgba(255,255,255,0.06)" stroke-width="1" />
-              <polyline id="spring-trace" fill="none" stroke="#E84A27" stroke-width="1.75" points="" />
-            </svg>
-
-            <!-- Draggable & Flickable Spring Object -->
-            <div
-              class="spring-puck"
-              id="spring-puck"
-              tabindex="0"
-              role="slider"
-              aria-label="Draggable spring card"
-            >
-              <div class="puck-pixel-corner" aria-hidden="true"></div>
-              <div class="puck-title">Grab &amp; throw</div>
-              <div class="puck-sub" id="puck-state">Catch mid-flight</div>
+        <div class="split-tactile">
+          <!-- Left: Live Light-Mode Interactive 2D Spring Playground -->
+          <div class="spring-lab">
+            <div class="lab-top">
+              <span class="lab-title">Interruptible spring physics</span>
+              <label class="reduce-toggle">
+                <input type="checkbox" id="reduce-motion-toggle" />
+                <span>Reduce motion</span>
+              </label>
             </div>
 
-            <div class="canvas-readout" aria-live="polite">
-              <span id="readout-vel">v 0, 0 px/s</span>
+            <div class="spring-canvas" id="spring-canvas">
+              <div class="detent detent-a" aria-hidden="true"></div>
+              <div class="detent detent-b" aria-hidden="true"></div>
+
+              <svg class="trace-svg" viewBox="0 0 400 72" preserveAspectRatio="none" aria-hidden="true">
+                <line x1="0" y1="36" x2="400" y2="36" stroke="rgba(11,12,13,0.08)" stroke-width="1" />
+                <polyline id="spring-trace" fill="none" stroke="#E84A27" stroke-width="2" points="" />
+              </svg>
+
+              <div
+                class="spring-puck"
+                id="spring-puck"
+                tabindex="0"
+                role="slider"
+                aria-label="Draggable spring card"
+              >
+                <div class="puck-pixel" aria-hidden="true"></div>
+                <div class="puck-title">Grab &amp; throw</div>
+                <div class="puck-sub" id="puck-state">Catch mid-flight</div>
+              </div>
+
+              <div class="canvas-readout" aria-live="polite">
+                <span id="readout-vel">v 0, 0 px/s</span>
+              </div>
+            </div>
+
+            <div class="lab-controls">
+              <label class="slider-field">
+                <span>Stiffness <strong id="val-stiffness">320</strong></span>
+                <input type="range" id="ctrl-stiffness" min="140" max="540" value="320" />
+              </label>
+              <label class="slider-field">
+                <span>Damping <strong id="val-damping">22</strong></span>
+                <input type="range" id="ctrl-damping" min="8" max="42" value="22" />
+              </label>
+              <button type="button" class="flick-btn" id="flick-btn">Flick</button>
             </div>
           </div>
 
-          <div class="lab-controls">
-            <label class="slider-field">
-              <span>Stiffness <strong id="val-stiffness">320</strong></span>
-              <input type="range" id="ctrl-stiffness" min="140" max="540" value="320" />
-            </label>
-            <label class="slider-field">
-              <span>Damping <strong id="val-damping">22</strong></span>
-              <input type="range" id="ctrl-damping" min="8" max="42" value="22" />
-            </label>
-            <button type="button" class="flick-btn" id="flick-btn">Flick</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- SECTION 2: tactile-ui (Asymmetrical 7fr / 5fr editorial split) -->
-      <section id="tactile-ui" class="skill-band">
-        <div class="band-grid band-tactile">
-          <div class="media-frame">
-            <img
-              src="https://raw.githubusercontent.com/jaxels1/tactile-ui/main/assets/demo.gif"
-              alt="tactile-ui prompt transformation, spring sheet, defensive CSS, and View Transitions demo"
-              loading="lazy"
-            />
-          </div>
-
-          <div class="band-body">
-            <h2>tactile-ui</h2>
-            <p class="band-copy">
-              Distills Apple's fluid interface physics, defensive CSS layout guards, OKLCH
-              color craft, and React <code>&lt;ViewTransition&gt;</code> patterns into
-              verifiable rules instead of vague visual adjectives.
-            </p>
+          <!-- Right: Demo GIF + Hairline Spec List -->
+          <div class="chapter-col">
+            <div class="media-frame">
+              <img
+                src="https://raw.githubusercontent.com/jaxels1/tactile-ui/main/assets/demo.gif"
+                alt="tactile-ui prompt transformation, spring sheet, defensive CSS, and View Transitions demo"
+                loading="lazy"
+              />
+            </div>
 
             <ul class="spec-list">
               <li>
@@ -223,10 +238,10 @@
               </li>
             </ul>
 
-            <div class="band-links">
+            <div class="chapter-links">
               <button
                 type="button"
-                class="inline-copy copy-trigger"
+                class="copy-chip copy-trigger"
                 data-copy="npx skills add jaxels1/tactile-ui"
               >
                 <code>npx skills add jaxels1/tactile-ui</code>
@@ -237,11 +252,22 @@
             </div>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <!-- SECTION 3: skill-sync (Reversed 6fr / 6fr split: live interactive git diff first) -->
-      <section id="skill-sync" class="skill-band">
-        <div class="band-grid band-sync">
+    <!-- CHAPTER 2: skill-sync (Full-Bleed Obsidian Polarity Shift) -->
+    <section id="skill-sync" class="band-obsidian">
+      <div class="container">
+        <div class="chapter-head">
+          <h2>skill-sync</h2>
+          <p class="chapter-lead">
+            Zero-dependency Node updater that scans symlink-deduplicated skill directories
+            across Claude Code, Codex, Cursor, Antigravity, and <code>skills.sh</code>,
+            blocking suspicious diffs before pulling.
+          </p>
+        </div>
+
+        <div class="split-sync">
           <div class="diff-panel">
             <div class="diff-toolbar">
               <span class="diff-heading">Pre-pull diff scanner</span>
@@ -286,15 +312,8 @@
             </div>
           </div>
 
-          <div class="band-body">
-            <h2>skill-sync</h2>
-            <p class="band-copy">
-              Zero-dependency Node updater that scans symlink-deduplicated skill directories
-              across Claude Code, Codex, Cursor, Antigravity, and <code>skills.sh</code>,
-              blocking suspicious upstream diffs before pulling.
-            </p>
-
-            <div class="media-frame media-compact">
+          <div class="chapter-col">
+            <div class="media-frame media-dark">
               <img
                 src="https://raw.githubusercontent.com/jaxels1/skill-sync/main/assets/demo.gif"
                 alt="skill-sync /updates list and pre-pull security gate demo"
@@ -302,34 +321,59 @@
               />
             </div>
 
-            <div class="band-links">
+            <div class="chapter-links">
               <button
                 type="button"
-                class="inline-copy copy-trigger"
+                class="copy-chip copy-chip-dark copy-trigger"
                 data-copy="npx skills add jaxels1/skill-sync"
               >
                 <code>npx skills add jaxels1/skill-sync</code>
                 <span>Copy</span>
               </button>
-              <a href="https://github.com/jaxels1/skill-sync" target="_blank" rel="noreferrer">GitHub</a>
-              <a href="https://jaxels1.github.io/skill-sync/" target="_blank" rel="noreferrer">Docs</a>
+              <a class="link-dark" href="https://github.com/jaxels1/skill-sync" target="_blank" rel="noreferrer">GitHub</a>
+              <a class="link-dark" href="https://jaxels1.github.io/skill-sync/" target="_blank" rel="noreferrer">Docs</a>
             </div>
           </div>
         </div>
-      </section>
-    </main>
+      </div>
+    </section>
 
-    <footer class="site-footer">
-      <div class="footer-inner">
-        <span>jaxels1</span>
-        <div class="footer-links">
-          <a href="https://github.com/jaxels1" target="_blank" rel="noreferrer">GitHub</a>
-          <a href="https://jaxels1.github.io/tactile-ui/" target="_blank" rel="noreferrer">tactile-ui</a>
-          <a href="https://jaxels1.github.io/skill-sync/" target="_blank" rel="noreferrer">skill-sync</a>
+    <!-- CHAPTER 3: Full-Bleed International Vermilion Closing Band -->
+    <section class="band-vermilion">
+      <div class="container closing-inner">
+        <h2 class="closing-title">SHIP WITH FEEL.</h2>
+        <div class="closing-actions">
+          <button
+            type="button"
+            class="mag-pill mag-pill-ink copy-trigger"
+            data-copy="npx skills add jaxels1/tactile-ui"
+          >
+            <code>npx skills add jaxels1/tactile-ui</code>
+            <span class="pill-state">Copy</span>
+          </button>
+          <button
+            type="button"
+            class="mag-pill mag-pill-ink copy-trigger"
+            data-copy="npx skills add jaxels1/skill-sync"
+          >
+            <code>npx skills add jaxels1/skill-sync</code>
+            <span class="pill-state">Copy</span>
+          </button>
         </div>
       </div>
-    </footer>
 
-    <script type="module" src="./app.js?v=2"></script>
+      <footer class="vermilion-footer">
+        <div class="container footer-row">
+          <span>jaxels1</span>
+          <div class="footer-links">
+            <a href="https://github.com/jaxels1" target="_blank" rel="noreferrer">GitHub</a>
+            <a href="https://jaxels1.github.io/tactile-ui/" target="_blank" rel="noreferrer">tactile-ui</a>
+            <a href="https://jaxels1.github.io/skill-sync/" target="_blank" rel="noreferrer">skill-sync</a>
+          </div>
+        </div>
+      </footer>
+    </section>
+
+    <script type="module" src="./app.js?v=3"></script>
   </body>
 </html>

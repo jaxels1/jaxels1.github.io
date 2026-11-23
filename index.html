@@ -27,7 +27,7 @@
       href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=14" />
+    <link rel="stylesheet" href="./styles.css?v=15" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -318,7 +318,8 @@
             <p class="panel-copy">
               Compaction-aware read guard with AST outlines on <code>&gt;500</code>-line files,
               monorepo search cap, allowlist-friendly <code>--pipe</code> stdout filter, and a
-              <code>p50 = 1.95ms</code> daemon—proven in a 24-task live A/B suite and 63-session replay audit.
+              <code>p50 = 1.95ms</code> daemon—proven in a live <code>GPT-6.1 Terra</code> A/B run,
+              a 24-task deterministic A/B suite, and a 63-session replay audit.
             </p>
 
             <!-- Interactive Token Filter Switcher driving 3D Compression Prism -->
@@ -340,9 +341,9 @@
                   <code id="guard-file">GPT-6.1 Terra live A/B + 63-session replay</code>
                   <span class="diff-count is-compressed" id="guard-count">-78.3% bytes · p50 1.95ms</span>
                 </div>
-                <pre class="diff-pre" id="guard-pre"><code><span class="d-add-cyan">✓ GPT-6.1 Terra T2: 68.2k → 43.4k in tok (-36.4%)</span>
+                <pre class="diff-pre" id="guard-pre"><code><span class="d-add-cyan">✓ GPT-6.1 Terra live A/B: 68.2k → 43.4k in tok (-36.4%)</span>
 <span class="d-add-cyan">✓ Live tool output: 31.6 KB → 6.9 KB (-78.3%)</span>
-<span class="d-add-cyan">✓ 24-task A/B: 24/24 pass · 443k → 22k tok (-95%)</span>
+<span class="d-add-cyan">✓ 24-task deterministic A/B: 24/24 pass (-95%)</span>
 <span class="d-ctx">  63-session replay: -55.5% uncached · 97.8% KV cache</span></code></pre>
                 <div class="diff-verdict is-compressed" id="guard-verdict">
                   <strong>100% pass rate · 20,276 tok saved in 2 live tasks</strong>
@@ -430,6 +431,6 @@
       </section>
     </main>
 
-    <script type="module" src="./app.js?v=14"></script>
+    <script type="module" src="./app.js?v=15"></script>
   </body>
 </html>

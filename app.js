@@ -41,6 +41,7 @@ const state3D = {
   damping: Number(dampingInput?.value || 14),
   reduceMotion: false,
   vaultSecure: false,
+  guardFiltered: true,
   spinX: 0,
   spinY: 0,
   velSpinX: 0,
@@ -210,6 +211,7 @@ if (canvasEl) {
     const accentColor = new THREE.Color(0xe84a27);
     const vermilionColor = new THREE.Color(0xe84a27);
     const emeraldColor = new THREE.Color(0x10b981);
+    const cyanColor = new THREE.Color(0x38bdf8);
 
     const coreLight = new THREE.PointLight(0xe84a27, 9, 13, 1.4);
     scene.add(coreLight);
@@ -439,6 +441,7 @@ if (canvasEl) {
     const secHero = document.getElementById("top");
     const secTactile = document.getElementById("tactile-ui");
     const secSync = document.getElementById("skill-sync");
+    const secGuard = document.getElementById("token-guard");
     const secFinale = document.getElementById("install");
 
     function getChapterWeights() {
@@ -448,22 +451,26 @@ if (canvasEl) {
       const c0 = centerOf(secHero);
       const c1 = centerOf(secTactile);
       const c2 = centerOf(secSync);
-      const c3 = Math.min(centerOf(secFinale), maxMidY - window.innerHeight * 0.06);
+      const c3 = centerOf(secGuard);
+      const c4 = Math.min(centerOf(secFinale), maxMidY - window.innerHeight * 0.06);
 
       const ease = (t) => t * t * (3 - 2 * t);
       const r01 = THREE.MathUtils.clamp((midY - c0) / Math.max(1, c1 - c0), 0, 1);
       const r12 = THREE.MathUtils.clamp((midY - c1) / Math.max(1, c2 - c1), 0, 1);
       const r23 = THREE.MathUtils.clamp((midY - c2) / Math.max(1, c3 - c2), 0, 1);
+      const r34 = THREE.MathUtils.clamp((midY - c3) / Math.max(1, c4 - c3), 0, 1);
 
       const t01 = ease(r01);
       const t12 = ease(r12);
       const t23 = ease(r23);
+      const t34 = ease(r34);
 
       return {
         wHero: 1 - t01,
         wTactile: t01 * (1 - t12),
         wSync: t12 * (1 - t23),
-        wFinale: t23,
+        wGuard: t23 * (1 - t34),
+        wFinale: t34,
       };
     }
 
@@ -477,25 +484,26 @@ if (canvasEl) {
       const reduced = state3D.reduceMotion || prefersReduced();
       const desktop = window.innerWidth > 900;
 
-      const { wHero, wTactile, wSync, wFinale } = getChapterWeights();
+      const { wHero, wTactile, wSync, wGuard, wFinale } = getChapterWeights();
 
       const groupLerp = 1 - Math.exp(-5.5 * dt);
       const rotLerp = 1 - Math.exp(-6.5 * dt);
 
-      const desiredGroupX = desktop ? wTactile * 1.95 - wSync * 1.95 : 0;
+      const desiredGroupX = desktop ? (wTactile + wGuard) * 1.95 - wSync * 1.95 : 0;
       const desiredGroupY =
         wHero * 0.62 +
         wFinale * 0.54 +
         (reduced ? 0 : Math.sin(elapsed * 1.1) * 0.06 * (wHero + wFinale)) +
-        (desktop ? 0 : (wTactile + wSync) * 1.15);
-      const desiredGroupZ = (wHero + wFinale) * 0.30 - (wTactile + wSync) * 0.22;
+        (desktop ? 0 : (wTactile + wSync + wGuard) * 1.15);
+      const desiredGroupZ = (wHero + wFinale) * 0.30 - (wTactile + wSync + wGuard) * 0.22;
 
       rootGroup.position.x = THREE.MathUtils.lerp(rootGroup.position.x, desiredGroupX, groupLerp);
       rootGroup.position.y = THREE.MathUtils.lerp(rootGroup.position.y, desiredGroupY, groupLerp);
       rootGroup.position.z = THREE.MathUtils.lerp(rootGroup.position.z, desiredGroupZ, groupLerp);
 
       if (!reduced) {
-        state3D.spinY += state3D.velSpinY + dt * (0.26 + wTactile * 0.10 + wSync * 0.14);
+        state3D.spinY +=
+          state3D.velSpinY + dt * (0.26 + wTactile * 0.10 + wSync * 0.14 + wGuard * 0.12);
         state3D.spinX += state3D.velSpinX;
         state3D.velSpinY *= Math.exp(-4.5 * dt);
         state3D.velSpinX *= Math.exp(-4.5 * dt);
@@ -507,12 +515,17 @@ if (canvasEl) {
       rootGroup.rotation.y = THREE.MathUtils.lerp(rootGroup.rotation.y, targetRotY, rotLerp);
 
       // Dynamic inner tourbillon & core color
-      const targetColor = wSync > 0.35 && state3D.vaultSecure ? emeraldColor : vermilionColor;
+      let targetColor = vermilionColor;
+      if (wGuard > 0.35 && state3D.guardFiltered) {
+        targetColor = cyanColor;
+      } else if (wSync > 0.35 && state3D.vaultSecure) {
+        targetColor = emeraldColor;
+      }
       accentColor.lerp(targetColor, groupLerp);
       coreMat.emissive.copy(accentColor);
       coreLight.color.copy(accentColor);
 
-      const coreScale = 0.46 + Math.max(wTactile, wSync) * 0.66;
+      const coreScale = 0.46 + Math.max(wTactile, wSync, wGuard) * 0.66;
       coreAssembly.scale.setScalar(coreScale);
       if (!reduced) {
         gimbalA.rotation.x += dt * 0.9;
@@ -521,8 +534,16 @@ if (canvasEl) {
         gimbalC.rotation.z += dt * 0.7;
       }
 
-      vaultHalo.material.opacity = wSync * 0.28;
-      vaultHalo.scale.setScalar(state3D.vaultSecure ? 1.14 : 0.94);
+      vaultHalo.material.opacity = wSync * 0.28 + wGuard * (state3D.guardFiltered ? 0.16 : 0);
+      vaultHalo.scale.setScalar(
+        wGuard > wSync
+          ? state3D.guardFiltered
+            ? 0.86
+            : 1.25
+          : state3D.vaultSecure
+            ? 1.14
+            : 0.94
+      );
 
       if (!reduced) {
         if (wSync > 0.25) {
@@ -530,8 +551,16 @@ if (canvasEl) {
           outerTierAngle -= dt * 0.36 * wSync;
         } else {
           const tierSnapLerp = 1 - Math.exp(-5.0 * dt);
-          midTierAngle = THREE.MathUtils.lerp(midTierAngle, snap90(midTierAngle), tierSnapLerp * (1 - wSync));
-          outerTierAngle = THREE.MathUtils.lerp(outerTierAngle, snap90(outerTierAngle), tierSnapLerp * (1 - wSync));
+          midTierAngle = THREE.MathUtils.lerp(
+            midTierAngle,
+            snap90(midTierAngle),
+            tierSnapLerp * (1 - wSync)
+          );
+          outerTierAngle = THREE.MathUtils.lerp(
+            outerTierAngle,
+            snap90(outerTierAngle),
+            tierSnapLerp * (1 - wSync)
+          );
         }
       }
 
@@ -539,7 +568,7 @@ if (canvasEl) {
       const tierR = state3D.vaultSecure ? 1.95 : 1.62;
       const tierY = state3D.vaultSecure ? 1.06 : 0.96;
       const capY = state3D.vaultSecure ? 1.82 : 1.66;
-      const wOpen = wTactile + wSync;
+      const wOpen = wTactile + wSync + wGuard;
 
       for (let i = 0; i < voxels.length; i++) {
         const v = voxels[i];
@@ -557,9 +586,29 @@ if (canvasEl) {
           vyOrb = v.tier * tierY;
         }
 
-        const baseX = v.home.x * (wHero + wFinale) + v.exploded.x * wTactile + vxOrb * wSync;
-        const baseY = v.home.y * (wHero + wFinale) + v.exploded.y * wTactile + vyOrb * wSync;
-        const baseZ = v.home.z * (wHero + wFinale) + v.exploded.z * wTactile + vzOrb * wSync;
+        // Token-guard prism (filtered compressed precision grid vs raw high-entropy scatter)
+        let vxGuard = 0;
+        let vyGuard = 0;
+        let vzGuard = 0;
+        if (wGuard > 0.001) {
+          if (state3D.guardFiltered) {
+            vxGuard = v.home.x * 1.56;
+            vyGuard = v.home.y * 1.38;
+            vzGuard = v.home.z * 1.56;
+          } else {
+            const chaos = reduced ? 0 : Math.sin(elapsed * 2.1 + v.phase) * 0.24;
+            vxGuard = v.home.x * 2.28 + Math.cos(v.phase) * 0.22;
+            vyGuard = v.home.y * 2.15 + chaos;
+            vzGuard = v.home.z * 2.28 + Math.sin(v.phase * 1.4) * 0.22;
+          }
+        }
+
+        const baseX =
+          v.home.x * (wHero + wFinale) + v.exploded.x * wTactile + vxOrb * wSync + vxGuard * wGuard;
+        const baseY =
+          v.home.y * (wHero + wFinale) + v.exploded.y * wTactile + vyOrb * wSync + vyGuard * wGuard;
+        const baseZ =
+          v.home.z * (wHero + wFinale) + v.exploded.z * wTactile + vzOrb * wSync + vzGuard * wGuard;
 
         const tierAng = v.tier === 0 ? midTierAngle : outerTierAngle;
         const cT = Math.cos(tierAng);
@@ -595,14 +644,18 @@ if (canvasEl) {
           const rotFactor = THREE.MathUtils.smoothstep(clearance, 0.25, 0.95);
           const spinWeight = THREE.MathUtils.smoothstep(wOpen, 0.16, 0.55) * rotFactor;
 
+          const gxSpin = state3D.guardFiltered ? 0.12 * v.spinVaultDir : v.spinTactile.x * 1.25;
+          const gySpin = state3D.guardFiltered ? 0.55 * v.spinVaultDir : v.spinTactile.y * 1.25;
+          const gzSpin = state3D.guardFiltered ? 0 : v.spinTactile.z * 1.25;
+
           const wx =
-            (v.spinTactile.x * wTactile + 0.35 * v.spinVaultDir * wSync) * spinWeight +
+            (v.spinTactile.x * wTactile + 0.35 * v.spinVaultDir * wSync + gxSpin * wGuard) * spinWeight +
             v.rotVel.x * rotFactor;
           const wy =
-            (v.spinTactile.y * wTactile + 0.90 * v.spinVaultDir * wSync) * spinWeight +
+            (v.spinTactile.y * wTactile + 0.90 * v.spinVaultDir * wSync + gySpin * wGuard) * spinWeight +
             v.rotVel.y * rotFactor;
           const wz =
-            (v.spinTactile.z * wTactile + 0.22 * v.spinVaultDir * wSync) * spinWeight +
+            (v.spinTactile.z * wTactile + 0.22 * v.spinVaultDir * wSync + gzSpin * wGuard) * spinWeight +
             v.rotVel.z * rotFactor;
 
           v.mesh.rotation.x += wx * dt;
@@ -706,5 +759,55 @@ diffTabs.forEach((btn) => {
     diffPre.innerHTML = `<code>${m.codeHtml}</code>`;
     diffVerdict.className = `diff-verdict ${m.blocked ? "is-blocked" : "is-safe"}`;
     diffVerdict.innerHTML = `<strong>${m.verdictText}</strong><code>${m.verdictMeta}</code>`;
+  });
+});
+
+const GUARD_MODES = {
+  filtered: {
+    file: "pytest + package-lock.json",
+    countText: "~275 tok (-94%)",
+    compressed: true,
+    codeHtml:
+      `<span class="d-add-risk">✕ Blocked duplicate read_file(app.js, lines 1–120)</span>\n` +
+      `<span class="d-add-risk">✕ Blocked unbounded package-lock.json (48 KB)</span>\n` +
+      `<span class="d-add-cyan">✓ pytest: 141 passed stripped → AssertionError line 42</span>\n` +
+      `<span class="d-ctx">  full log: %TEMP%/token-guard-logs/1795-a8f2.log</span>`,
+    verdictText: "4,325 tokens saved · KV cache 100% intact",
+    verdictMeta: "audit_transcript.py",
+  },
+  raw: {
+    file: "unfiltered tool stream",
+    countText: "~4,600 tok (0% saved)",
+    compressed: false,
+    codeHtml:
+      `<span class="d-add-risk">+ [re-read] app.js lines 1–120 unchanged (4.2 KB)</span>\n` +
+      `<span class="d-add-risk">+ [dump] package-lock.json unbounded (14,200 lines)</span>\n` +
+      `<span class="d-add-risk">+ [stdout] ✓ PASS test_001 ... ✓ PASS test_141 (ANSI spam)</span>\n` +
+      `<span class="d-ctx">  + PreInvocation injection invalidated KV prefix cache</span>`,
+    verdictText: "18.4 KB bloated context passed to model",
+    verdictMeta: "no guards active",
+  },
+};
+
+const guardTabs = document.querySelectorAll("[data-guard-mode]");
+const guardFile = document.getElementById("guard-file");
+const guardCount = document.getElementById("guard-count");
+const guardPre = document.getElementById("guard-pre");
+const guardVerdict = document.getElementById("guard-verdict");
+
+guardTabs.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const modeKey = btn.dataset.guardMode;
+    const g = GUARD_MODES[modeKey];
+    if (!g) return;
+    state3D.guardFiltered = modeKey === "filtered";
+    trigger3DPulse(6.0);
+    guardTabs.forEach((t) => t.classList.toggle("is-active", t === btn));
+    guardFile.textContent = g.file;
+    guardCount.textContent = g.countText;
+    guardCount.className = `diff-count ${g.compressed ? "is-compressed" : "is-blocked"}`;
+    guardPre.innerHTML = `<code>${g.codeHtml}</code>`;
+    guardVerdict.className = `diff-verdict ${g.compressed ? "is-compressed" : "is-blocked"}`;
+    guardVerdict.innerHTML = `<strong>${g.verdictText}</strong><code>${g.verdictMeta}</code>`;
   });
 });

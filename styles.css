@@ -460,6 +460,7 @@ code {
 .diff-count { font-family: var(--font-mono); font-size: 11px; }
 .diff-count.is-blocked { color: #f87171; }
 .diff-count.is-safe { color: #34d399; }
+.diff-count.is-compressed { color: #38bdf8; }
 
 .diff-pre {
   margin: 0;
@@ -472,6 +473,7 @@ code {
 .d-ctx { color: var(--muted); }
 .d-add-risk { display: block; color: #fca5a5; }
 .d-add-safe { display: block; color: #6ee7b7; }
+.d-add-cyan { display: block; color: #7dd3fc; }
 
 .diff-verdict {
   padding: 10px 14px;
@@ -485,6 +487,7 @@ code {
 
 .diff-verdict.is-blocked { color: #fca5a5; }
 .diff-verdict.is-safe { color: #6ee7b7; }
+.diff-verdict.is-compressed { color: #7dd3fc; }
 
 .cmd-grid {
   display: grid;

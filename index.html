@@ -7,14 +7,14 @@
     <title>jaxels — Agent skills, machined.</title>
     <meta
       name="description"
-      content="Open-source SKILL.md agent skills by jaxels1 for Claude Code, OpenAI Codex, Cursor, Antigravity, and Gemini CLI: tactile-ui (interruptible spring physics and defensive CSS) and skill-sync (pre-pull security-gated updates)."
+      content="Open-source SKILL.md agent skills by jaxels1 for Claude Code, OpenAI Codex, Cursor, Antigravity, and Gemini CLI: tactile-ui (interruptible spring physics and defensive CSS), skill-sync (pre-pull security-gated updates), and token-guard (5-layer token & AI-usage defense)."
     />
     <link rel="canonical" href="https://jaxels1.github.io/" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="jaxels — Agent skills, machined." />
     <meta
       property="og:description"
-      content="Interactive 3D showcase for tactile-ui and skill-sync: spring physics, defensive CSS, and security-gated skill updates."
+      content="Interactive 3D showcase for tactile-ui, skill-sync, and token-guard: spring physics, security-gated updates, and 5-layer token defense."
     />
     <meta property="og:url" content="https://jaxels1.github.io/" />
     <meta
@@ -27,7 +27,7 @@
       href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=8" />
+    <link rel="stylesheet" href="./styles.css?v=9" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -66,6 +66,19 @@
                   "codeRepository": "https://github.com/jaxels1/skill-sync",
                   "description": "Zero-dependency SKILL.md updater with pre-pull diff security scanning, symlink deduplication, and /update all and /updates list commands."
                 }
+              },
+              {
+                "@type": "ListItem",
+                "position": 3,
+                "item": {
+                  "@type": "SoftwareApplication",
+                  "name": "token-guard",
+                  "applicationCategory": "DeveloperApplication",
+                  "operatingSystem": "macOS, Windows, Linux",
+                  "url": "https://jaxels1.github.io/token-guard/",
+                  "codeRepository": "https://github.com/jaxels1/token-guard",
+                  "description": "5-layer cross-agent token optimizer with duplicate/unbounded read guard, noisy command stdout compressor, cache-safe SKILL.md, and JSONL transcript auditor."
+                }
               }
             ]
           }
@@ -100,6 +113,7 @@
         <nav class="header-nav" aria-label="Primary">
           <a href="#tactile-ui">tactile-ui</a>
           <a href="#skill-sync">skill-sync</a>
+          <a href="#token-guard">token-guard</a>
           <a href="https://github.com/jaxels1" target="_blank" rel="noreferrer">GitHub</a>
         </nav>
       </div>
@@ -130,6 +144,14 @@
               data-copy="npx skills add jaxels1/skill-sync"
             >
               <code>npx skills add jaxels1/skill-sync</code>
+              <span class="pill-state">Copy</span>
+            </button>
+            <button
+              type="button"
+              class="glass-pill copy-trigger"
+              data-copy="npx skills add jaxels1/token-guard"
+            >
+              <code>npx skills add jaxels1/token-guard</code>
               <span class="pill-state">Copy</span>
             </button>
           </div>
@@ -281,8 +303,83 @@
         </div>
       </section>
 
-      <!-- CHAPTER 3: Re-assembled Monolith Finale -->
-      <section id="install" class="chapter chapter-finale" data-chapter="3">
+      <!-- CHAPTER 3: token-guard (Left Frosted Glass Panel + Right 3D Token Prism) -->
+      <section id="token-guard" class="chapter chapter-split" data-chapter="3">
+        <div class="chapter-inner align-left">
+          <article class="glass-panel">
+            <div class="panel-head">
+              <h2>token-guard</h2>
+              <div class="panel-links">
+                <a href="https://github.com/jaxels1/token-guard" target="_blank" rel="noreferrer">GitHub</a>
+                <a href="https://jaxels1.github.io/token-guard/" target="_blank" rel="noreferrer">Docs</a>
+              </div>
+            </div>
+
+            <p class="panel-copy">
+              Cuts AI usage across 5 layers without breaking your KV prompt cache:
+              dedupes unchanged file reads, blocks lockfile token bombs, and compresses
+              noisy shell output with raw temp-log spills.
+            </p>
+
+            <!-- Interactive Token Filter Switcher driving 3D Compression Prism -->
+            <div class="diff-block">
+              <div class="diff-bar">
+                <span class="diff-label">PreToolUse hook simulator</span>
+                <div class="diff-tabs" role="group" aria-label="Switch token guard mode">
+                  <button type="button" class="diff-tab is-active" data-guard-mode="filtered">
+                    Filtered (-94%)
+                  </button>
+                  <button type="button" class="diff-tab" data-guard-mode="raw">
+                    Raw Unfiltered
+                  </button>
+                </div>
+              </div>
+
+              <div class="diff-surface">
+                <div class="diff-meta">
+                  <code id="guard-file">pytest + package-lock.json</code>
+                  <span class="diff-count is-compressed" id="guard-count">~275 tok (-94%)</span>
+                </div>
+                <pre class="diff-pre" id="guard-pre"><code><span class="d-add-risk">✕ Blocked duplicate read_file(app.js, lines 1–120)</span>
+<span class="d-add-risk">✕ Blocked unbounded package-lock.json (48 KB)</span>
+<span class="d-add-cyan">✓ pytest: 141 passed stripped → AssertionError line 42</span>
+<span class="d-ctx">  full log: %TEMP%/token-guard-logs/1795-a8f2.log</span></code></pre>
+                <div class="diff-verdict is-compressed" id="guard-verdict">
+                  <strong>4,325 tokens saved · KV cache 100% intact</strong>
+                  <code>audit_transcript.py</code>
+                </div>
+              </div>
+            </div>
+
+            <div class="cmd-grid" aria-label="token-guard defense layers">
+              <button type="button" class="cmd-btn copy-trigger" data-copy="python3 scripts/read_guard.py">
+                <code>read_guard</code>
+              </button>
+              <button type="button" class="cmd-btn copy-trigger" data-copy="python3 scripts/cmd_filter.py">
+                <code>cmd_filter</code>
+              </button>
+              <button type="button" class="cmd-btn copy-trigger" data-copy="python3 scripts/audit_transcript.py">
+                <code>audit_transcript</code>
+              </button>
+              <button type="button" class="cmd-btn copy-trigger" data-copy="npx skills add jaxels1/token-guard">
+                <code>&lt;350 tok</code>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              class="glass-pill panel-copy-btn copy-trigger"
+              data-copy="npx skills add jaxels1/token-guard"
+            >
+              <code>npx skills add jaxels1/token-guard</code>
+              <span class="pill-state">Copy</span>
+            </button>
+          </article>
+        </div>
+      </section>
+
+      <!-- CHAPTER 4: Re-assembled Monolith Finale -->
+      <section id="install" class="chapter chapter-finale" data-chapter="4">
         <div class="finale-content">
           <h2>Install in one command.</h2>
           <div class="hero-pills">
@@ -302,6 +399,14 @@
               <code>npx skills add jaxels1/skill-sync</code>
               <span class="pill-state">Copy</span>
             </button>
+            <button
+              type="button"
+              class="glass-pill copy-trigger"
+              data-copy="npx skills add jaxels1/token-guard"
+            >
+              <code>npx skills add jaxels1/token-guard</code>
+              <span class="pill-state">Copy</span>
+            </button>
           </div>
         </div>
 
@@ -311,11 +416,12 @@
             <a href="https://github.com/jaxels1" target="_blank" rel="noreferrer">GitHub</a>
             <a href="https://jaxels1.github.io/tactile-ui/" target="_blank" rel="noreferrer">tactile-ui</a>
             <a href="https://jaxels1.github.io/skill-sync/" target="_blank" rel="noreferrer">skill-sync</a>
+            <a href="https://jaxels1.github.io/token-guard/" target="_blank" rel="noreferrer">token-guard</a>
           </div>
         </footer>
       </section>
     </main>
 
-    <script type="module" src="./app.js?v=8"></script>
+    <script type="module" src="./app.js?v=9"></script>
   </body>
 </html>

@@ -363,7 +363,7 @@ if (canvasEl) {
 
       // Smoothly position entire 3D sculpture across viewport halves per chapter
       const desiredGroupX = desktop ? wTactile * 1.95 - wSync * 1.95 : 0;
-      const desiredGroupY = wHero * 0.35 + wFinale * 0.45 + (desktop ? 0 : (wTactile + wSync) * 1.15);
+      const desiredGroupY = wHero * 0.62 + wFinale * 0.45 + (desktop ? 0 : (wTactile + wSync) * 1.15);
       const desiredGroupZ = wHero * 0.35 - (wTactile + wSync) * 0.25;
 
       rootGroup.position.x = THREE.MathUtils.lerp(rootGroup.position.x, desiredGroupX, 0.08);

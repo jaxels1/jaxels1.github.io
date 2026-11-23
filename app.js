@@ -25,7 +25,7 @@ document.querySelectorAll(".copy-trigger").forEach((btn) => {
 });
 
 // ---------------------------------------------------------------------------
-// 2. Three.js Apple-Studio 3x3x3 CNC Machined Voxel Assembly
+// 2. Three.js Class-A CNC Rounded Voxel Core (Analytical Normals + Studio HDRI)
 // ---------------------------------------------------------------------------
 const canvasEl = document.getElementById("webgl-canvas");
 const orbitZone = document.getElementById("hero-orbit-zone");
@@ -36,13 +36,11 @@ const dampingVal = document.getElementById("val-damping");
 const pulseBtn = document.getElementById("pulse-3d-btn");
 const reduceToggle = document.getElementById("reduce-motion-toggle");
 
-// Shared interactive state read by the 3D render loop
 const state3D = {
   stiffness: Number(stiffnessInput?.value || 180),
   damping: Number(dampingInput?.value || 14),
   reduceMotion: false,
-  vaultSecure: false, // false = risky (vermilion tight lock), true = clean (emerald open ring)
-  pulseImpulse: 0,
+  vaultSecure: false,
   spinX: 0,
   spinY: 0,
   velSpinX: 0,
@@ -51,57 +49,118 @@ const state3D = {
   pointerY: 0,
 };
 
-function createMachinedVoxelGeometry(size = 0.68, radius = 0.11, bevel = 0.045) {
-  const s = size * 0.5 - bevel;
-  const r = Math.min(radius, s * 0.45);
-  const shape = new THREE.Shape();
-  shape.moveTo(-s + r, -s);
-  shape.lineTo(s - r, -s);
-  shape.quadraticCurveTo(s, -s, s, -s + r);
-  shape.lineTo(s, s - r);
-  shape.quadraticCurveTo(s, s, s - r, s);
-  shape.lineTo(-s + r, s);
-  shape.quadraticCurveTo(-s, s, -s, s - r);
-  shape.lineTo(-s, -s + r);
-  shape.quadraticCurveTo(-s, -s, -s + r, -s);
+/**
+ * Class-A rounded cube with analytical SDF normals and edge-clustered vertices
+ * (zero bevel facets, zero sharp corners, seamless specular reflections).
+ */
+function createClassARoundedVoxel(size = 0.6, radius = 0.11, segments = 16) {
+  const geo = new THREE.BoxGeometry(1, 1, 1, segments, segments, segments);
+  const pos = geo.attributes.position;
+  const norm = geo.attributes.normal;
+  const inner = size * 0.5 - radius;
 
-  const depth = size - bevel * 2;
-  const geo = new THREE.ExtrudeGeometry(shape, {
-    depth,
-    bevelEnabled: true,
-    bevelThickness: bevel,
-    bevelSize: bevel,
-    bevelSegments: 4,
-    curveSegments: 8,
-  });
-  geo.center();
+  const remap = (t) => Math.sign(t) * Math.pow(Math.abs(t * 2), 0.72) * 0.5;
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+  for (let i = 0; i < pos.count; i++) {
+    const px = remap(pos.getX(i)) * size;
+    const py = remap(pos.getY(i)) * size;
+    const pz = remap(pos.getZ(i)) * size;
+
+    const cx = clamp(px, -inner, inner);
+    const cy = clamp(py, -inner, inner);
+    const cz = clamp(pz, -inner, inner);
+
+    let dx = px - cx;
+    let dy = py - cy;
+    let dz = pz - cz;
+    const len = Math.hypot(dx, dy, dz) || 1;
+    dx /= len;
+    dy /= len;
+    dz /= len;
+
+    pos.setXYZ(i, cx + dx * radius, cy + dy * radius, cz + dz * radius);
+    norm.setXYZ(i, dx, dy, dz);
+  }
+
+  pos.needsUpdate = true;
+  norm.needsUpdate = true;
   return geo;
+}
+
+/**
+ * Procedural 512x512 brushed anodized metal grain texture (deterministic math).
+ */
+function createBrushedMetalTexture() {
+  const c = document.createElement("canvas");
+  c.width = 512;
+  c.height = 512;
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = "#b8b8b8";
+  ctx.fillRect(0, 0, 512, 512);
+
+  for (let y = 0; y < 512; y++) {
+    const h = Math.sin(y * 12.9898) * 43758.5453;
+    const frac = h - Math.floor(h);
+    const shade = Math.round(150 + frac * 90);
+    ctx.fillStyle = `rgb(${shade},${shade},${shade})`;
+    ctx.fillRect(0, y, 512, 1);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(1, 2);
+  return tex;
+}
+
+/**
+ * Smooth gradient softbox light panels baked into PMREM environment so specular
+ * highlights glide smoothly across titanium chamfers.
+ */
+function createSoftboxTexture(innerColor, outerColor) {
+  const c = document.createElement("canvas");
+  c.width = 256;
+  c.height = 256;
+  const ctx = c.getContext("2d");
+  const g = ctx.createRadialGradient(128, 128, 12, 128, 128, 128);
+  g.addColorStop(0, innerColor);
+  g.addColorStop(0.55, outerColor);
+  g.addColorStop(1, "rgba(10,12,14,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 256, 256);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
 }
 
 function buildAppleStudioEnvironment(renderer) {
   const pmrem = new THREE.PMREMGenerator(renderer);
   const studio = new THREE.Scene();
-  studio.background = new THREE.Color(0x0b0d10);
+  studio.background = new THREE.Color(0x0c0e11);
 
-  const makePanel = (color, intensity, w, h, pos, lookAt) => {
+  const softWarm = createSoftboxTexture("#ffffff", "rgba(255,244,232,0.5)");
+  const softCool = createSoftboxTexture("#f0f7ff", "rgba(186,214,255,0.45)");
+
+  const addSoftbox = (tex, intensity, w, h, pos) => {
     const mat = new THREE.MeshBasicMaterial({
-      color: new THREE.Color(color).multiplyScalar(intensity),
+      map: tex,
+      color: new THREE.Color(0xffffff).multiplyScalar(intensity),
+      transparent: true,
       side: THREE.DoubleSide,
     });
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
     mesh.position.set(...pos);
-    mesh.lookAt(...lookAt);
+    mesh.lookAt(0, 0, 0);
     studio.add(mesh);
   };
 
-  // Classic Apple Keynote softbox rig: crisp overhead diffuser + bright side rim panels
-  makePanel(0xfffcf5, 5.2, 14, 4, [0, 8, 2], [0, 0, 0]);
-  makePanel(0xdbeafe, 3.6, 8, 12, [-9, 2, 4], [0, 0, 0]);
-  makePanel(0xffedd5, 3.8, 8, 12, [9, -1, 5], [0, 0, 0]);
-  makePanel(0xffffff, 2.8, 10, 6, [0, -7, 4], [0, 0, 0]);
-  makePanel(0xffffff, 2.4, 12, 12, [0, 3, -9], [0, 0, 0]);
+  addSoftbox(softWarm, 5.8, 18, 8, [0, 9, 2]);
+  addSoftbox(softCool, 4.2, 14, 16, [-10, 2, 5]);
+  addSoftbox(softWarm, 4.4, 14, 16, [10, -1, 5]);
+  addSoftbox(softCool, 2.8, 16, 10, [0, -8, 4]);
+  addSoftbox(softWarm, 3.0, 16, 14, [0, 3, -10]);
 
-  const envRT = pmrem.fromScene(studio, 0.035);
+  const envRT = pmrem.fromScene(studio, 0.04);
   pmrem.dispose();
   return envRT.texture;
 }
@@ -125,27 +184,26 @@ if (canvasEl) {
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
     renderer.setSize(window.innerWidth, window.innerHeight, false);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.25;
+    renderer.toneMappingExposure = 1.28;
 
     const scene = new THREE.Scene();
     scene.environment = buildAppleStudioEnvironment(renderer);
 
     const camera = new THREE.PerspectiveCamera(
-      40,
+      39,
       window.innerWidth / window.innerHeight,
       0.1,
       60
     );
-    camera.position.set(0, 0.45, 7.6);
+    camera.position.set(0, 0.42, 7.75);
 
-    // Key, Rim, and Dynamic Core Lights
-    scene.add(new THREE.AmbientLight(0xffffff, 0.48));
+    scene.add(new THREE.AmbientLight(0xffffff, 0.55));
 
-    const keyLight = new THREE.DirectionalLight(0xfff7ed, 2.8);
+    const keyLight = new THREE.DirectionalLight(0xfff7ed, 2.7);
     keyLight.position.set(5, 7, 8);
     scene.add(keyLight);
 
-    const rimLight = new THREE.DirectionalLight(0xcbd5e1, 2.2);
+    const rimLight = new THREE.DirectionalLight(0xdbeafe, 2.2);
     rimLight.position.set(-6, 3, -5);
     scene.add(rimLight);
 
@@ -153,115 +211,151 @@ if (canvasEl) {
     const vermilionColor = new THREE.Color(0xe84a27);
     const emeraldColor = new THREE.Color(0x10b981);
 
-    const coreLight = new THREE.PointLight(0xe84a27, 8, 12, 1.5);
+    const coreLight = new THREE.PointLight(0xe84a27, 9, 13, 1.4);
     scene.add(coreLight);
 
-    // Sculpture Root (positioned smoothly left/center/right across chapters)
     const rootGroup = new THREE.Group();
     scene.add(rootGroup);
 
-    // Materials: Anodized Space Titanium & Dark Graphite voxels + Glowing Core
-    const titaniumMat = new THREE.MeshPhysicalMaterial({
-      color: 0x525860,
-      metalness: 0.88,
-      roughness: 0.2,
-      clearcoat: 0.9,
-      clearcoatRoughness: 0.12,
-      envMapIntensity: 1.75,
+    // 3 Precision Hardware Materials
+    const brushedTex = createBrushedMetalTexture();
+
+    const naturalTitaniumMat = new THREE.MeshPhysicalMaterial({
+      color: 0x767e87,
+      metalness: 0.9,
+      roughness: 0.24,
+      roughnessMap: brushedTex,
+      bumpMap: brushedTex,
+      bumpScale: 0.004,
+      clearcoat: 0.72,
+      clearcoatRoughness: 0.16,
+      envMapIntensity: 1.9,
     });
 
-    const obsidianMat = new THREE.MeshPhysicalMaterial({
-      color: 0x262a2e,
-      metalness: 0.82,
-      roughness: 0.26,
-      clearcoat: 0.85,
-      clearcoatRoughness: 0.15,
-      envMapIntensity: 1.55,
+    const obsidianAluminumMat = new THREE.MeshPhysicalMaterial({
+      color: 0x22262b,
+      metalness: 0.86,
+      roughness: 0.28,
+      roughnessMap: brushedTex,
+      bumpMap: brushedTex,
+      bumpScale: 0.003,
+      clearcoat: 0.82,
+      clearcoatRoughness: 0.14,
+      envMapIntensity: 1.65,
     });
 
-    const voxelGeo = createMachinedVoxelGeometry(0.66, 0.1, 0.045);
+    const smokedGlassMat = new THREE.MeshPhysicalMaterial({
+      color: 0xdbe4ee,
+      metalness: 0.04,
+      roughness: 0.14,
+      transmission: 0.76,
+      thickness: 0.75,
+      ior: 1.52,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.08,
+      envMapIntensity: 2.0,
+    });
 
-    // Optical Glowing Inner Core
+    const voxelGeo = createClassARoundedVoxel(0.6, 0.11, 16);
+
+    // High-Poly Gyroscopic Tourbillon Optical Core
     const coreMat = new THREE.MeshPhysicalMaterial({
       color: 0xffffff,
       emissive: 0xe84a27,
-      emissiveIntensity: 1.9,
-      metalness: 0.15,
-      roughness: 0.12,
-      transmission: 0.35,
+      emissiveIntensity: 2.1,
+      metalness: 0.1,
+      roughness: 0.1,
+      clearcoat: 1.0,
     });
-    const coreMesh = new THREE.Mesh(
-      new THREE.IcosahedronGeometry(0.62, 1),
+    const coreSphere = new THREE.Mesh(
+      new THREE.SphereGeometry(0.4, 48, 48),
       coreMat
     );
-    const coreWire = new THREE.Mesh(
-      new THREE.OctahedronGeometry(0.92, 0),
-      new THREE.MeshBasicMaterial({
-        color: 0xe84a27,
-        wireframe: true,
-        transparent: true,
-        opacity: 0.48,
-      })
-    );
-    rootGroup.add(coreMesh, coreWire);
+    const gimbalMat = new THREE.MeshPhysicalMaterial({
+      color: 0x9aa2ab,
+      metalness: 0.94,
+      roughness: 0.16,
+      envMapIntensity: 2.0,
+    });
+    const gimbalA = new THREE.Mesh(new THREE.TorusGeometry(0.6, 0.018, 24, 96), gimbalMat);
+    const gimbalB = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.015, 24, 96), gimbalMat);
+    const gimbalC = new THREE.Mesh(new THREE.TorusGeometry(0.9, 0.012, 24, 96), gimbalMat);
+    gimbalB.rotation.x = Math.PI * 0.36;
+    gimbalC.rotation.y = Math.PI * 0.42;
 
-    // Build 26 Outer CNC-Machined Voxels (3x3x3 minus center)
+    const coreAssembly = new THREE.Group();
+    coreAssembly.add(coreSphere, gimbalA, gimbalB, gimbalC);
+    rootGroup.add(coreAssembly);
+
+    // Build 26 Outer Class-A Rounded Voxels with Zero-Overlap Layout
     const voxels = [];
-    const STEP = 0.74;
-    let ringIdx = 0;
+    const STEP = 0.72; // 0.60 size => 0.12 crisp uniform machined gap everywhere
+    let idx = 0;
 
     for (let ix = -1; ix <= 1; ix++) {
       for (let iy = -1; iy <= 1; iy++) {
         for (let iz = -1; iz <= 1; iz++) {
           if (ix === 0 && iy === 0 && iz === 0) continue;
 
+          const manhattan = Math.abs(ix) + Math.abs(iy) + Math.abs(iz);
+          const mat =
+            manhattan === 1
+              ? smokedGlassMat // 6 center faces: frosted sapphire lenses
+              : manhattan === 3
+                ? naturalTitaniumMat // 8 corners: CNC natural titanium
+                : obsidianAluminumMat; // 12 edges: anodized obsidian aluminum
+
           const home = new THREE.Vector3(ix * STEP, iy * STEP, iz * STEP);
           const dir = home.clone().normalize();
-          const exploded = dir.clone().multiplyScalar(2.25 + ((ix + iy + iz + 3) % 3) * 0.42);
-          exploded.y += Math.sin(ringIdx * 1.1) * 0.45;
+          const homeRadius = home.length();
 
-          const mesh = new THREE.Mesh(
-            voxelGeo,
-            (ix + iy + iz) % 2 === 0 ? titaniumMat : obsidianMat
-          );
+          // Strictly radial scaled explosion preserves 3x3x3 separation with huge clearance
+          const exploded = home.clone().multiplyScalar(2.15);
+
+          const mesh = new THREE.Mesh(voxelGeo, mat);
           mesh.position.copy(home);
           rootGroup.add(mesh);
+
+          // Non-overlapping two-tier hexagonal security vault assignment
+          const isOuterRing = idx < 14;
+          const ringTotal = isOuterRing ? 14 : 12;
+          const ringIndex = isOuterRing ? idx : idx - 14;
 
           voxels.push({
             mesh,
             home,
+            homeRadius,
             dir,
             exploded,
             vel: new THREE.Vector3(),
             rotVel: new THREE.Vector3(),
-            angle: (ringIdx / 26) * Math.PI * 2,
-            band: ringIdx % 2 === 0 ? 1 : -1,
-            phase: ringIdx * 0.7,
+            vaultRing: isOuterRing ? 0 : 1,
+            vaultAngle: (ringIndex / ringTotal) * Math.PI * 2 + (isOuterRing ? 0 : Math.PI / 12),
+            phase: idx * 0.68,
           });
-          ringIdx++;
+          idx++;
         }
       }
     }
 
-    // Subtle orbital precision bezel rings around vault mode
-    const ringGeo = new THREE.TorusGeometry(2.35, 0.014, 12, 96);
-    const ringMat = new THREE.MeshBasicMaterial({
-      color: 0xf5f5f7,
-      transparent: true,
-      opacity: 0,
-    });
-    const vaultHalo = new THREE.Mesh(ringGeo, ringMat);
-    vaultHalo.rotation.x = Math.PI * 0.42;
+    // Subtle precision outer vault bezel ring (vault chapter only)
+    const vaultHalo = new THREE.Mesh(
+      new THREE.TorusGeometry(2.5, 0.012, 16, 128),
+      new THREE.MeshBasicMaterial({ color: 0xf5f5f7, transparent: true, opacity: 0 })
+    );
+    vaultHalo.rotation.x = Math.PI * 0.44;
     rootGroup.add(vaultHalo);
 
-    trigger3DPulse = (strength = 12) => {
+    // Proportional radial pulse prevents inner center-face cubes overtaking corner cubes
+    trigger3DPulse = (strength = 11) => {
       if (state3D.reduceMotion || prefersReduced()) return;
       for (const v of voxels) {
-        v.vel.addScaledVector(v.dir, strength * (0.75 + Math.abs(Math.sin(v.phase)) * 0.55));
+        const proportional = strength * (0.65 + v.homeRadius * 0.48);
+        v.vel.addScaledVector(v.dir, proportional);
         v.rotVel.set(
-          Math.sin(v.phase) * 4,
-          Math.cos(v.phase * 1.3) * 4,
-          Math.sin(v.phase * 0.7) * 3
+          Math.sin(v.phase) * 2.8,
+          Math.cos(v.phase * 1.3) * 2.8,
+          Math.sin(v.phase * 0.7) * 2.2
         );
       }
     };
@@ -269,16 +363,12 @@ if (canvasEl) {
     // Hero Drag-to-Orbit + Click-to-Pulse Interaction
     if (orbitZone) {
       let dragging = false;
-      let startX = 0;
-      let startY = 0;
       let lastX = 0;
       let lastY = 0;
       let moved = 0;
 
       orbitZone.addEventListener("pointerdown", (e) => {
         dragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
         lastX = e.clientX;
         lastY = e.clientY;
         moved = 0;
@@ -292,8 +382,8 @@ if (canvasEl) {
         lastX = e.clientX;
         lastY = e.clientY;
         moved += Math.hypot(dx, dy);
-        state3D.velSpinY = dx * 0.018;
-        state3D.velSpinX = dy * 0.014;
+        state3D.velSpinY = dx * 0.016;
+        state3D.velSpinX = dy * 0.013;
         state3D.spinY += state3D.velSpinY;
         state3D.spinX += state3D.velSpinX;
       });
@@ -302,7 +392,7 @@ if (canvasEl) {
         if (!dragging) return;
         dragging = false;
         if (moved < 8) {
-          trigger3DPulse(13);
+          trigger3DPulse(12);
         }
       });
 
@@ -323,7 +413,6 @@ if (canvasEl) {
       renderer.setSize(window.innerWidth, window.innerHeight, false);
     });
 
-    // Helper: Measure exact continuous chapter progress across the 4 sections
     const secHero = document.getElementById("top");
     const secTactile = document.getElementById("tactile-ui");
     const secSync = document.getElementById("skill-sync");
@@ -341,14 +430,14 @@ if (canvasEl) {
       const t12 = THREE.MathUtils.clamp((midY - c1) / Math.max(1, c2 - c1), 0, 1);
       const t23 = THREE.MathUtils.clamp((midY - c2) / Math.max(1, c3 - c2), 0, 1);
 
-      const wHero = 1 - t01;
-      const wTactile = t01 * (1 - t12);
-      const wSync = t12 * (1 - t23);
-      const wFinale = t23;
-      return { wHero, wTactile, wSync, wFinale };
+      return {
+        wHero: 1 - t01,
+        wTactile: t01 * (1 - t12),
+        wSync: t12 * (1 - t23),
+        wFinale: t23,
+      };
     }
 
-    // Main Render & Spring Physics Loop
     let prevTime = performance.now();
     const tmpTarget = new THREE.Vector3();
 
@@ -361,62 +450,58 @@ if (canvasEl) {
 
       const { wHero, wTactile, wSync, wFinale } = getChapterWeights();
 
-      // Smoothly position entire 3D sculpture across viewport halves per chapter
       const desiredGroupX = desktop ? wTactile * 1.95 - wSync * 1.95 : 0;
       const desiredGroupY = wHero * 0.62 + wFinale * 0.45 + (desktop ? 0 : (wTactile + wSync) * 1.15);
-      const desiredGroupZ = wHero * 0.35 - (wTactile + wSync) * 0.25;
+      const desiredGroupZ = wHero * 0.32 - (wTactile + wSync) * 0.25;
 
       rootGroup.position.x = THREE.MathUtils.lerp(rootGroup.position.x, desiredGroupX, 0.08);
       rootGroup.position.y = THREE.MathUtils.lerp(rootGroup.position.y, desiredGroupY, 0.08);
       rootGroup.position.z = THREE.MathUtils.lerp(rootGroup.position.z, desiredGroupZ, 0.08);
 
-      // Gentle keynote auto-rotation + user drag inertia + subtle mouse parallax
       if (!reduced) {
-        state3D.spinY += state3D.velSpinY + dt * (0.28 + wTactile * 0.15 + wSync * 0.25);
+        state3D.spinY += state3D.velSpinY + dt * (0.24 + wTactile * 0.14 + wSync * 0.22);
         state3D.spinX += state3D.velSpinX;
         state3D.velSpinY *= 0.93;
         state3D.velSpinX *= 0.93;
       }
 
-      const targetRotX = 0.44 + state3D.spinX + (reduced ? 0 : state3D.pointerY * 0.14);
-      const targetRotY = -0.62 + state3D.spinY + (reduced ? 0 : state3D.pointerX * 0.18);
+      const targetRotX = 0.42 + state3D.spinX + (reduced ? 0 : state3D.pointerY * 0.14);
+      const targetRotY = -0.64 + state3D.spinY + (reduced ? 0 : state3D.pointerX * 0.18);
       rootGroup.rotation.x = THREE.MathUtils.lerp(rootGroup.rotation.x, targetRotX, 0.1);
       rootGroup.rotation.y = THREE.MathUtils.lerp(rootGroup.rotation.y, targetRotY, 0.1);
 
-      // Shift optical core color smoothly between Vermilion (#E84A27) & Emerald (#10B981)
+      // Dynamic inner tourbillon & core color
       const targetColor = wSync > 0.35 && state3D.vaultSecure ? emeraldColor : vermilionColor;
       accentColor.lerp(targetColor, 0.08);
       coreMat.emissive.copy(accentColor);
-      coreWire.material.color.copy(accentColor);
       coreLight.color.copy(accentColor);
 
-      const coreReveal = Math.max(wTactile, wSync * 0.85);
-      coreMesh.scale.setScalar(0.55 + coreReveal * 0.65);
-      coreWire.scale.setScalar(0.65 + coreReveal * 0.72);
+      const coreScale = 0.85 + Math.max(wTactile, wSync) * 0.25;
+      coreAssembly.scale.setScalar(coreScale);
       if (!reduced) {
-        coreMesh.rotation.y += dt * 0.8;
-        coreWire.rotation.z -= dt * 0.55;
+        gimbalA.rotation.x += dt * 0.9;
+        gimbalA.rotation.y += dt * 0.45;
+        gimbalB.rotation.y -= dt * 1.1;
+        gimbalC.rotation.z += dt * 0.7;
       }
 
-      vaultHalo.material.opacity = wSync * 0.26;
-      vaultHalo.scale.setScalar(state3D.vaultSecure ? 1.12 : 0.9);
-      if (!reduced) {
-        vaultHalo.rotation.z += dt * (state3D.vaultSecure ? 0.35 : -0.9);
-      }
+      vaultHalo.material.opacity = wSync * 0.28;
+      vaultHalo.scale.setScalar(state3D.vaultSecure ? 1.14 : 0.94);
 
-      // Compute target position & orientation for all 26 CNC-machined voxels
-      const vaultRadius = state3D.vaultSecure ? 2.55 : 1.95;
+      const outerR = state3D.vaultSecure ? 2.85 : 2.35;
+      const innerR = state3D.vaultSecure ? 2.2 : 1.78;
 
       for (let i = 0; i < voxels.length; i++) {
         const v = voxels[i];
 
-        // Vault orbital coordinates
-        const orbitAng = v.angle + (reduced ? 0 : elapsed * (0.45 * v.band));
-        const vxOrb = Math.cos(orbitAng) * vaultRadius;
-        const vzOrb = Math.sin(orbitAng) * vaultRadius;
-        const vyOrb = v.band * 0.55 + Math.sin(orbitAng * 2) * 0.32;
+        // Non-overlapping two-ring security vault coordinates
+        const dirSign = v.vaultRing === 0 ? 1 : -1;
+        const rOrbit = v.vaultRing === 0 ? outerR : innerR;
+        const ang = v.vaultAngle + (reduced ? 0 : elapsed * 0.42 * dirSign);
+        const vxOrb = Math.cos(ang) * rOrbit;
+        const vzOrb = Math.sin(ang) * rOrbit;
+        const vyOrb = dirSign * 0.56 + Math.sin(ang * 2) * 0.16;
 
-        // Weighted blend across chapters
         tmpTarget.set(
           v.home.x * (wHero + wFinale) + v.exploded.x * wTactile + vxOrb * wSync,
           v.home.y * (wHero + wFinale) + v.exploded.y * wTactile + vyOrb * wSync,
@@ -424,7 +509,7 @@ if (canvasEl) {
         );
 
         if (wTactile > 0.05 && !reduced) {
-          tmpTarget.y += Math.sin(elapsed * 1.4 + v.phase) * 0.14 * wTactile;
+          tmpTarget.y += Math.sin(elapsed * 1.35 + v.phase) * 0.12 * wTactile;
         }
 
         if (reduced) {
@@ -433,7 +518,6 @@ if (canvasEl) {
           v.vel.set(0, 0, 0);
           v.rotVel.set(0, 0, 0);
         } else {
-          // Real harmonic spring integration: F = -k * (x - target) - c * v
           const dx = v.mesh.position.x - tmpTarget.x;
           const dy = v.mesh.position.y - tmpTarget.y;
           const dz = v.mesh.position.z - tmpTarget.z;
@@ -441,21 +525,32 @@ if (canvasEl) {
           v.vel.x += (-state3D.stiffness * dx - state3D.damping * v.vel.x) * dt;
           v.vel.y += (-state3D.stiffness * dy - state3D.damping * v.vel.y) * dt;
           v.vel.z += (-state3D.stiffness * dz - state3D.damping * v.vel.z) * dt;
-
           v.mesh.position.addScaledVector(v.vel, dt);
 
-          // Spin decay back to crisp axis alignment
+          // Clearance-gated rotation guarantees voxels lock strictly axis-aligned (0,0,0) before touching home
+          const clearance = Math.max(0, v.mesh.position.length() - v.homeRadius);
+          const rotFactor = THREE.MathUtils.smoothstep(clearance, 0.35, 1.15);
+
+          const goalRx =
+            (wTactile * Math.sin(elapsed + v.phase) * 0.35 + wSync * 0.25 * dirSign) * rotFactor;
+          const goalRy = (wTactile * Math.cos(elapsed + v.phase) * 0.35 + wSync * ang) * rotFactor;
+
           v.mesh.rotation.x = THREE.MathUtils.lerp(
-            v.mesh.rotation.x + v.rotVel.x * dt,
-            wTactile * Math.sin(elapsed + v.phase) * 0.35 + wSync * orbitAng * 0.2,
-            0.08
+            v.mesh.rotation.x + v.rotVel.x * dt * rotFactor,
+            goalRx,
+            0.14
           );
           v.mesh.rotation.y = THREE.MathUtils.lerp(
-            v.mesh.rotation.y + v.rotVel.y * dt,
-            wTactile * Math.cos(elapsed + v.phase) * 0.35 + wSync * orbitAng,
-            0.08
+            v.mesh.rotation.y + v.rotVel.y * dt * rotFactor,
+            goalRy,
+            0.14
           );
-          v.rotVel.multiplyScalar(0.9);
+          v.mesh.rotation.z = THREE.MathUtils.lerp(
+            v.mesh.rotation.z + v.rotVel.z * dt * rotFactor,
+            0,
+            0.16
+          );
+          v.rotVel.multiplyScalar(0.88);
         }
       }
 
@@ -463,7 +558,6 @@ if (canvasEl) {
       requestAnimationFrame(animate);
     }
 
-    // Subtle opening pulse on initial page load
     window.setTimeout(() => trigger3DPulse(7.5), 220);
     requestAnimationFrame(animate);
   }
@@ -483,14 +577,13 @@ dampingInput?.addEventListener("input", () => {
 });
 
 pulseBtn?.addEventListener("click", () => {
-  trigger3DPulse(14);
+  trigger3DPulse(13);
 });
 
 reduceToggle?.addEventListener("change", () => {
   state3D.reduceMotion = reduceToggle.checked;
 });
 
-// Pre-Pull Diff Switcher (also updates the 3D Security Vault state live!)
 const DIFF_MODES = {
   risky: {
     file: "definitely-not-a-virus/SKILL.md",

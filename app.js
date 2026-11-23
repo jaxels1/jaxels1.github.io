@@ -764,27 +764,27 @@ diffTabs.forEach((btn) => {
 
 const GUARD_MODES = {
   filtered: {
-    file: "63 sessions · 15,024 tool calls",
-    countText: "-14.75M tok (-55.5%)",
+    file: "24-task A/B + 63-session replay",
+    countText: "24/24 pass · p50 1.95ms",
     compressed: true,
     codeHtml:
-      `<span class="d-add-risk">✕ 2,951 duplicate reads blocked (~20.56 MB)</span>\n` +
-      `<span class="d-add-cyan">✓ Stdout compressed: 47.61 MB → 9.17 MB (-80.7%)</span>\n` +
-      `<span class="d-add-cyan">✓ Partial line overlaps auto-trimmed via overwrite</span>\n` +
-      `<span class="d-ctx">  KV cache hit rate: 97.8% (1.190B / 1.217B tok)</span>`,
-    verdictText: "59.0 MB saved · ~2.25× longer quota runway",
-    verdictMeta: "audit_transcript.py",
+      `<span class="d-add-cyan">✓ Live A/B (incl. rebound): 443k → 22k tok (-95%)</span>\n` +
+      `<span class="d-add-cyan">✓ AST outline on >500L + PreCompact reset</span>\n` +
+      `<span class="d-add-cyan">✓ 63-session replay: -55.5% uncached burn</span>\n` +
+      `<span class="d-ctx">  --pipe preserves allowlists · 97.8% KV cache hit</span>`,
+    verdictText: "100% task pass rate · sub-2ms daemon",
+    verdictMeta: "ab_benchmark.py",
   },
   raw: {
-    file: "63 sessions · unfiltered baseline",
-    countText: "26.56M fresh tok (0% saved)",
+    file: "unfiltered baseline (no guards)",
+    countText: "443k A/B · 26.56M replay",
     compressed: false,
     codeHtml:
-      `<span class="d-add-risk">+ 2,951 redundant file re-reads (20.56 MB)</span>\n` +
-      `<span class="d-add-risk">+ 47.61 MB raw tool stdout (38.44 MB noise)</span>\n` +
-      `<span class="d-add-risk">+ Overlapping line ranges re-read untruncated</span>\n` +
+      `<span class="d-add-risk">+ Full >500-line files & lockfiles dumped raw</span>\n` +
+      `<span class="d-add-risk">+ Unbounded rg matches across node_modules & dist</span>\n` +
+      `<span class="d-add-risk">+ 2,951 duplicate file reads + 47.6 MB raw stdout</span>\n` +
       `<span class="d-ctx">  26,560,584 fresh uncached input tokens burned</span>`,
-    verdictText: "59.0 MB avoidable context bloat across 561 turns",
+    verdictText: "59.0 MB avoidable bloat across 63 sessions",
     verdictMeta: "no guards active",
   },
 };

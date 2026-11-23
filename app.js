@@ -37,8 +37,8 @@ const pulseBtn = document.getElementById("pulse-3d-btn");
 const reduceToggle = document.getElementById("reduce-motion-toggle");
 
 const state3D = {
-  stiffness: Number(stiffnessInput?.value || 140),
-  damping: Number(dampingInput?.value || 21),
+  stiffness: Number(stiffnessInput?.value || 175),
+  damping: Number(dampingInput?.value || 14),
   reduceMotion: false,
   vaultSecure: false,
   spinX: 0,
@@ -310,18 +310,22 @@ if (canvasEl) {
           const homeRadius = home.length();
 
           // Strictly radial scaled explosion preserves 3x3x3 separation with huge clearance
-          const exploded = home.clone().multiplyScalar(2.05);
+          const exploded = home.clone().multiplyScalar(2.12);
 
           const mesh = new THREE.Mesh(voxelGeo, mat);
           mesh.position.copy(home);
           rootGroup.add(mesh);
 
-          // Azimuth- & tier-matched 3-layer security vault assignment (no center-crossing paths)
+          // Azimuth- & tier-matched 3-layer security vault assignment + kinetic spin vectors
           const isPolar = ix === 0 && iz === 0;
           const azimuth = isPolar ? 0 : Math.atan2(iz, ix);
           const tier = iy;
-          const isCornerColumn = Math.abs(ix) === 1 && Math.abs(iz) === 1;
-          const vaultYaw = isCornerColumn ? (ix * iz > 0 ? -Math.PI / 4 : Math.PI / 4) : 0;
+          const spinTactile = new THREE.Vector3(
+            (idx % 3 === 0 ? 1 : -1) * (0.38 + (idx % 4) * 0.14),
+            (idx % 2 === 0 ? 1 : -1) * (0.62 + (idx % 5) * 0.15),
+            Math.sin(idx * 1.9 + 0.5) * 0.48
+          );
+          const spinVaultDir = tier === 0 ? 1 : -1;
 
           voxels.push({
             mesh,
@@ -334,7 +338,8 @@ if (canvasEl) {
             tier,
             isPolar,
             azimuth,
-            vaultYaw,
+            spinTactile,
+            spinVaultDir,
             phase: idx * 0.55,
           });
           idx++;
@@ -350,16 +355,30 @@ if (canvasEl) {
     vaultHalo.rotation.x = Math.PI * 0.5;
     rootGroup.add(vaultHalo);
 
+    const HALF_PI = Math.PI * 0.5;
+    const snap90 = (a) => Math.round(a / HALF_PI) * HALF_PI;
+    let midTierAngle = 0;
+    let outerTierAngle = 0;
+    const pulseDir = new THREE.Vector3();
+
     // Proportional radial pulse prevents inner center-face cubes overtaking corner cubes
-    trigger3DPulse = (strength = 9) => {
+    trigger3DPulse = (strength = 11) => {
       if (state3D.reduceMotion || prefersReduced()) return;
       for (const v of voxels) {
-        const proportional = strength * (0.65 + v.homeRadius * 0.45);
-        v.vel.addScaledVector(v.dir, proportional);
+        const tierAng = v.tier === 0 ? midTierAngle : outerTierAngle;
+        const cT = Math.cos(tierAng);
+        const sT = Math.sin(tierAng);
+        pulseDir.set(
+          v.dir.x * cT - v.dir.z * sT,
+          v.dir.y,
+          v.dir.x * sT + v.dir.z * cT
+        );
+        const proportional = strength * (0.65 + v.homeRadius * 0.48);
+        v.vel.addScaledVector(pulseDir, proportional);
         v.rotVel.set(
-          Math.sin(v.phase) * 1.1,
-          Math.cos(v.phase * 1.3) * 1.1,
-          Math.sin(v.phase * 0.7) * 0.85
+          Math.sin(v.phase + 0.4) * 2.2,
+          Math.cos(v.phase * 1.3) * 2.2,
+          Math.sin(v.phase * 0.7) * 1.8
         );
       }
     };
@@ -396,7 +415,7 @@ if (canvasEl) {
         if (!dragging) return;
         dragging = false;
         if (moved < 8) {
-          trigger3DPulse(9.0);
+          trigger3DPulse(11);
         }
       });
 
@@ -465,7 +484,10 @@ if (canvasEl) {
 
       const desiredGroupX = desktop ? wTactile * 1.95 - wSync * 1.95 : 0;
       const desiredGroupY =
-        wHero * 0.62 + wFinale * 0.54 + (desktop ? 0 : (wTactile + wSync) * 1.15);
+        wHero * 0.62 +
+        wFinale * 0.54 +
+        (reduced ? 0 : Math.sin(elapsed * 1.1) * 0.06 * (wHero + wFinale)) +
+        (desktop ? 0 : (wTactile + wSync) * 1.15);
       const desiredGroupZ = (wHero + wFinale) * 0.30 - (wTactile + wSync) * 0.22;
 
       rootGroup.position.x = THREE.MathUtils.lerp(rootGroup.position.x, desiredGroupX, groupLerp);
@@ -473,7 +495,7 @@ if (canvasEl) {
       rootGroup.position.z = THREE.MathUtils.lerp(rootGroup.position.z, desiredGroupZ, groupLerp);
 
       if (!reduced) {
-        state3D.spinY += state3D.velSpinY + dt * (0.16 + wTactile * 0.06 + wSync * 0.10);
+        state3D.spinY += state3D.velSpinY + dt * (0.26 + wTactile * 0.10 + wSync * 0.14);
         state3D.spinX += state3D.velSpinX;
         state3D.velSpinY *= Math.exp(-4.5 * dt);
         state3D.velSpinX *= Math.exp(-4.5 * dt);
@@ -493,26 +515,36 @@ if (canvasEl) {
       const coreScale = 0.46 + Math.max(wTactile, wSync) * 0.66;
       coreAssembly.scale.setScalar(coreScale);
       if (!reduced) {
-        gimbalA.rotation.x += dt * 0.55;
-        gimbalA.rotation.y += dt * 0.28;
-        gimbalB.rotation.y -= dt * 0.68;
-        gimbalC.rotation.z += dt * 0.42;
+        gimbalA.rotation.x += dt * 0.9;
+        gimbalA.rotation.y += dt * 0.45;
+        gimbalB.rotation.y -= dt * 1.1;
+        gimbalC.rotation.z += dt * 0.7;
       }
 
       vaultHalo.material.opacity = wSync * 0.28;
       vaultHalo.scale.setScalar(state3D.vaultSecure ? 1.14 : 0.94);
 
+      if (!reduced) {
+        if (wSync > 0.25) {
+          midTierAngle += dt * 0.52 * wSync;
+          outerTierAngle -= dt * 0.36 * wSync;
+        } else {
+          const tierSnapLerp = 1 - Math.exp(-5.0 * dt);
+          midTierAngle = THREE.MathUtils.lerp(midTierAngle, snap90(midTierAngle), tierSnapLerp * (1 - wSync));
+          outerTierAngle = THREE.MathUtils.lerp(outerTierAngle, snap90(outerTierAngle), tierSnapLerp * (1 - wSync));
+        }
+      }
+
       const midR = state3D.vaultSecure ? 2.45 : 2.05;
       const tierR = state3D.vaultSecure ? 1.95 : 1.62;
       const tierY = state3D.vaultSecure ? 1.06 : 0.96;
       const capY = state3D.vaultSecure ? 1.82 : 1.66;
-      const voxelRotLerp = 1 - Math.exp(-7.5 * dt);
-      const rotVelDecay = Math.exp(-6.5 * dt);
+      const wOpen = wTactile + wSync;
 
       for (let i = 0; i < voxels.length; i++) {
         const v = voxels[i];
 
-        // Static-azimuth 3-tier vault coordinates (whole vault orbits cleanly via rootGroup.rotation.y)
+        // Polar tier-rotated 3-layer security vault coordinates (zero chord-crossing collisions)
         let vxOrb = 0;
         let vyOrb = 0;
         let vzOrb = 0;
@@ -525,14 +557,22 @@ if (canvasEl) {
           vyOrb = v.tier * tierY;
         }
 
+        const baseX = v.home.x * (wHero + wFinale) + v.exploded.x * wTactile + vxOrb * wSync;
+        const baseY = v.home.y * (wHero + wFinale) + v.exploded.y * wTactile + vyOrb * wSync;
+        const baseZ = v.home.z * (wHero + wFinale) + v.exploded.z * wTactile + vzOrb * wSync;
+
+        const tierAng = v.tier === 0 ? midTierAngle : outerTierAngle;
+        const cT = Math.cos(tierAng);
+        const sT = Math.sin(tierAng);
+
         tmpTarget.set(
-          v.home.x * (wHero + wFinale) + v.exploded.x * wTactile + vxOrb * wSync,
-          v.home.y * (wHero + wFinale) + v.exploded.y * wTactile + vyOrb * wSync,
-          v.home.z * (wHero + wFinale) + v.exploded.z * wTactile + vzOrb * wSync
+          baseX * cT - baseZ * sT,
+          baseY,
+          baseX * sT + baseZ * cT
         );
 
         if (wTactile > 0.05 && !reduced) {
-          tmpTarget.y += Math.sin(elapsed * 1.15 + v.phase) * 0.09 * wTactile;
+          tmpTarget.y += Math.sin(elapsed * 1.45 + v.phase) * 0.14 * wTactile;
         }
 
         if (reduced) {
@@ -550,32 +590,43 @@ if (canvasEl) {
           v.vel.z += (-state3D.stiffness * dz - state3D.damping * v.vel.z) * dt;
           v.mesh.position.addScaledVector(v.vel, dt);
 
-          // Clearance-gated bounded rotation guarantees voxels lock strictly axis-aligned (0,0,0) before touching home
+          // Continuous active 3D tumble/spin when open + nearest-90° mechanical detent lock on assemble
           const clearance = Math.max(0, v.mesh.position.length() - v.homeRadius);
-          const rotFactor = THREE.MathUtils.smoothstep(clearance, 0.32, 1.05);
+          const rotFactor = THREE.MathUtils.smoothstep(clearance, 0.25, 0.95);
+          const spinWeight = THREE.MathUtils.smoothstep(wOpen, 0.16, 0.55) * rotFactor;
 
-          const goalRx = (wTactile * Math.sin(elapsed * 0.7 + v.phase) * 0.16) * rotFactor;
-          const goalRy =
-            (wTactile * Math.cos(elapsed * 0.65 + v.phase) * 0.16 + wSync * v.vaultYaw) *
-            rotFactor;
-          const goalRz = 0;
+          const wx =
+            (v.spinTactile.x * wTactile + 0.35 * v.spinVaultDir * wSync) * spinWeight +
+            v.rotVel.x * rotFactor;
+          const wy =
+            (v.spinTactile.y * wTactile + 0.90 * v.spinVaultDir * wSync) * spinWeight +
+            v.rotVel.y * rotFactor;
+          const wz =
+            (v.spinTactile.z * wTactile + 0.22 * v.spinVaultDir * wSync) * spinWeight +
+            v.rotVel.z * rotFactor;
 
+          v.mesh.rotation.x += wx * dt;
+          v.mesh.rotation.y += wy * dt;
+          v.mesh.rotation.z += wz * dt;
+
+          const snapWeight = 1 - spinWeight;
+          const snapBlend = (1 - Math.exp(-8.5 * dt)) * snapWeight;
           v.mesh.rotation.x = THREE.MathUtils.lerp(
-            v.mesh.rotation.x + v.rotVel.x * dt * rotFactor,
-            goalRx,
-            voxelRotLerp
+            v.mesh.rotation.x,
+            snap90(v.mesh.rotation.x),
+            snapBlend
           );
           v.mesh.rotation.y = THREE.MathUtils.lerp(
-            v.mesh.rotation.y + v.rotVel.y * dt * rotFactor,
-            goalRy,
-            voxelRotLerp
+            v.mesh.rotation.y,
+            snap90(v.mesh.rotation.y),
+            snapBlend
           );
           v.mesh.rotation.z = THREE.MathUtils.lerp(
-            v.mesh.rotation.z + v.rotVel.z * dt * rotFactor,
-            goalRz,
-            voxelRotLerp
+            v.mesh.rotation.z,
+            snap90(v.mesh.rotation.z),
+            snapBlend
           );
-          v.rotVel.multiplyScalar(rotVelDecay);
+          v.rotVel.multiplyScalar(Math.exp(-5.0 * dt));
         }
       }
 
@@ -583,7 +634,7 @@ if (canvasEl) {
       requestAnimationFrame(animate);
     }
 
-    window.setTimeout(() => trigger3DPulse(5.0), 220);
+    window.setTimeout(() => trigger3DPulse(7.0), 220);
     requestAnimationFrame(animate);
   }
 }
@@ -602,7 +653,7 @@ dampingInput?.addEventListener("input", () => {
 });
 
 pulseBtn?.addEventListener("click", () => {
-  trigger3DPulse(10.5);
+  trigger3DPulse(12.5);
 });
 
 reduceToggle?.addEventListener("change", () => {
@@ -647,7 +698,7 @@ diffTabs.forEach((btn) => {
     const m = DIFF_MODES[modeKey];
     if (!m) return;
     state3D.vaultSecure = modeKey === "clean";
-    trigger3DPulse(3.8);
+    trigger3DPulse(5.5);
     diffTabs.forEach((t) => t.classList.toggle("is-active", t === btn));
     diffFile.textContent = m.file;
     diffCount.textContent = m.countText;

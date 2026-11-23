@@ -764,27 +764,27 @@ diffTabs.forEach((btn) => {
 
 const GUARD_MODES = {
   filtered: {
-    file: "pytest + package-lock.json",
-    countText: "~275 tok (-94%)",
+    file: "63 sessions · 15,024 tool calls",
+    countText: "-14.75M tok (-55.5%)",
     compressed: true,
     codeHtml:
-      `<span class="d-add-risk">✕ Blocked duplicate read_file(app.js, lines 1–120)</span>\n` +
-      `<span class="d-add-risk">✕ Blocked unbounded package-lock.json (48 KB)</span>\n` +
-      `<span class="d-add-cyan">✓ pytest: 141 passed stripped → AssertionError line 42</span>\n` +
-      `<span class="d-ctx">  full log: %TEMP%/token-guard-logs/1795-a8f2.log</span>`,
-    verdictText: "4,325 tokens saved · KV cache 100% intact",
+      `<span class="d-add-risk">✕ 2,951 duplicate unchanged reads blocked (~20.56 MB)</span>\n` +
+      `<span class="d-add-cyan">✓ Tool output compressed: 47.61 MB → 9.17 MB (-80.7%)</span>\n` +
+      `<span class="d-add-cyan">✓ Partial line overlaps auto-trimmed via PreToolUse overwrite</span>\n` +
+      `<span class="d-ctx">  KV prefix cache hit rate: 97.8% (1.190B / 1.217B tok)</span>`,
+    verdictText: "59.0 MB saved · ~2.25× longer quota runway",
     verdictMeta: "audit_transcript.py",
   },
   raw: {
-    file: "unfiltered tool stream",
-    countText: "~4,600 tok (0% saved)",
+    file: "63 sessions · unfiltered baseline",
+    countText: "26.56M fresh tok (0% saved)",
     compressed: false,
     codeHtml:
-      `<span class="d-add-risk">+ [re-read] app.js lines 1–120 unchanged (4.2 KB)</span>\n` +
-      `<span class="d-add-risk">+ [dump] package-lock.json unbounded (14,200 lines)</span>\n` +
-      `<span class="d-add-risk">+ [stdout] ✓ PASS test_001 ... ✓ PASS test_141 (ANSI spam)</span>\n` +
-      `<span class="d-ctx">  + PreInvocation injection invalidated KV prefix cache</span>`,
-    verdictText: "18.4 KB bloated context passed to model",
+      `<span class="d-add-risk">+ 2,951 redundant file re-reads sent into context (20.56 MB)</span>\n` +
+      `<span class="d-add-risk">+ 47.61 MB raw command & tool stdout (38.44 MB excess noise)</span>\n` +
+      `<span class="d-add-risk">+ Overlapping line ranges re-read without trimming</span>\n` +
+      `<span class="d-ctx">  26,560,584 fresh uncached input tokens consumed</span>`,
+    verdictText: "59.0 MB avoidable context bloat across 561 turns",
     verdictMeta: "no guards active",
   },
 };

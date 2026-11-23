@@ -467,7 +467,13 @@ code {
   padding: 12px 14px;
   font-size: 12px;
   line-height: 1.65;
-  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
+
+.diff-pre::-webkit-scrollbar {
+  display: none;
 }
 
 .d-ctx { color: var(--muted); }

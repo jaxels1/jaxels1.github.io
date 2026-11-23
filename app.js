@@ -1,226 +1,20 @@
-// Awwwards-grade spring-pixel field, magnetic pills, scroll-velocity marquee, and 2D spring playground
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
 
 const prefersReduced = () =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 // ---------------------------------------------------------------------------
-// 1. Full-Bleed Hero Interactive Spring-Pixel <canvas> + HUD Pointer Coords
+// 1. UI Controls & Clipboard Copy
 // ---------------------------------------------------------------------------
-const pixelCanvas = document.getElementById("pixel-spring-canvas");
-const hudCoords = document.getElementById("hud-coords");
-const lineA = document.getElementById("line-a");
-const lineB = document.getElementById("line-b");
-
-if (pixelCanvas) {
-  const ctx = pixelCanvas.getContext("2d");
-  const SPACING = 30;
-  let width = 0;
-  let height = 0;
-  let dpr = 1;
-  let dots = [];
-
-  const pointer = { x: -9999, y: -9999, active: false };
-  const ripples = [];
-
-  function buildGrid() {
-    dpr = Math.min(2, window.devicePixelRatio || 1);
-    width = pixelCanvas.clientWidth || window.innerWidth;
-    height = pixelCanvas.clientHeight || window.innerHeight;
-    pixelCanvas.width = Math.round(width * dpr);
-    pixelCanvas.height = Math.round(height * dpr);
-    dots = [];
-    const cols = Math.floor(width / SPACING);
-    const rows = Math.floor(height / SPACING);
-    const offsetX = (width - (cols - 1) * SPACING) / 2;
-    const offsetY = (height - (rows - 1) * SPACING) / 2;
-
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        dots.push({
-          bx: offsetX + c * SPACING,
-          by: offsetY + r * SPACING,
-          ox: 0,
-          oy: 0,
-          vx: 0,
-          vy: 0,
-        });
-      }
-    }
-  }
-
-  function triggerRipple(cx, cy, strength = 46) {
-    if (prefersReduced()) return;
-    ripples.push({ x: cx, y: cy, r: 0, speed: 620, strength });
-  }
-
-  let prevCanvasT = performance.now();
-  function drawPixelField(now) {
-    const dt = Math.min(0.032, (now - prevCanvasT) / 1000);
-    prevCanvasT = now;
-
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, width, height);
-
-    // Advance shockwave ripples
-    for (let i = ripples.length - 1; i >= 0; i--) {
-      ripples[i].r += ripples[i].speed * dt;
-      if (ripples[i].r > Math.hypot(width, height)) {
-        ripples.splice(i, 1);
-      }
-    }
-
-    const reduced = prefersReduced();
-    const STIFF = 175;
-    const DAMP = 11;
-    const RADIUS = 155;
-
-    for (let i = 0; i < dots.length; i++) {
-      const d = dots[i];
-      if (!reduced) {
-        // Mouse repulsion spring impulse
-        if (pointer.active) {
-          const dx = d.bx + d.ox - pointer.x;
-          const dy = d.by + d.oy - pointer.y;
-          const dist = Math.hypot(dx, dy);
-          if (dist < RADIUS && dist > 0.1) {
-            const force = (1 - dist / RADIUS) * 2400;
-            d.vx += (dx / dist) * force * dt;
-            d.vy += (dy / dist) * force * dt;
-          }
-        }
-
-        // Click / opening shockwave ripples
-        for (let rIdx = 0; rIdx < ripples.length; rIdx++) {
-          const rp = ripples[rIdx];
-          const dx = d.bx - rp.x;
-          const dy = d.by - rp.y;
-          const dist = Math.hypot(dx, dy);
-          const band = Math.abs(dist - rp.r);
-          if (band < 42 && dist > 1) {
-            const kick = (1 - band / 42) * rp.strength;
-            d.vx += (dx / dist) * kick * 18 * dt;
-            d.vy += (dy / dist) * kick * 18 * dt;
-          }
-        }
-
-        // Harmonic spring return to rest lattice
-        const ax = -STIFF * d.ox - DAMP * d.vx;
-        const ay = -STIFF * d.oy - DAMP * d.vy;
-        d.vx += ax * dt;
-        d.vy += ay * dt;
-        d.ox += d.vx * dt;
-        d.oy += d.vy * dt;
-      }
-
-      const disp = Math.hypot(d.ox, d.oy);
-      const energy = Math.min(1, disp / 16);
-
-      // Tint displaced pixels from ink toward International Vermilion (#E84A27)
-      if (energy > 0.14) {
-        const r = Math.round(11 + energy * (232 - 11));
-        const g = Math.round(12 + energy * (74 - 12));
-        const b = Math.round(13 + energy * (39 - 13));
-        ctx.fillStyle = `rgba(${r},${g},${b},${0.22 + energy * 0.72})`;
-        const size = 3 + energy * 2.5;
-        ctx.fillRect(d.bx + d.ox - size / 2, d.by + d.oy - size / 2, size, size);
-      } else {
-        ctx.fillStyle = "rgba(11, 12, 13, 0.16)";
-        ctx.fillRect(d.bx - 1, d.by - 1, 2.5, 2.5);
-      }
-    }
-
-    requestAnimationFrame(drawPixelField);
-  }
-
-  buildGrid();
-  window.addEventListener("resize", buildGrid);
-
-  // Subtle opening pulse across canvas on load
-  triggerRipple(width * 0.5, height * 0.45, 38);
-
-  const heroBand = document.querySelector(".band-hero");
-  heroBand?.addEventListener("pointermove", (e) => {
-    const rect = heroBand.getBoundingClientRect();
-    pointer.x = e.clientX - rect.left;
-    pointer.y = e.clientY - rect.top;
-    pointer.active = true;
-    if (hudCoords) {
-      const px = String(Math.max(0, Math.round(e.clientX))).padStart(4, "0");
-      const py = String(Math.max(0, Math.round(e.clientY))).padStart(4, "0");
-      hudCoords.textContent = `X:${px} Y:${py}`;
-    }
-  });
-
-  heroBand?.addEventListener("pointerleave", () => {
-    pointer.active = false;
-  });
-
-  heroBand?.addEventListener("pointerdown", (e) => {
-    if (e.target.closest("button, a")) return;
-    const rect = heroBand.getBoundingClientRect();
-    triggerRipple(e.clientX - rect.left, e.clientY - rect.top, 64);
-  });
-
-  requestAnimationFrame(drawPixelField);
-}
-
-// ---------------------------------------------------------------------------
-// 2. Scroll-Velocity Kinetic Marquee + Parallax Hero Lines
-// ---------------------------------------------------------------------------
-const marqueeTrack = document.getElementById("marquee-track");
-let marqueeOffset = 0;
-let lastScrollY = window.scrollY;
-let scrollVelocity = 0;
-
-function tickScrollMotion() {
-  const currY = window.scrollY;
-  const deltaY = currY - lastScrollY;
-  lastScrollY = currY;
-  scrollVelocity = scrollVelocity * 0.88 + deltaY * 0.12;
-
-  if (!prefersReduced()) {
-    if (marqueeTrack) {
-      const halfW = marqueeTrack.scrollWidth / 2 || 800;
-      const speed = 0.75 + Math.min(8, Math.abs(scrollVelocity) * 0.35);
-      marqueeOffset = (marqueeOffset - speed) % halfW;
-      const skew = Math.max(-7, Math.min(7, scrollVelocity * 0.25));
-      marqueeTrack.style.transform = `translate3d(${marqueeOffset.toFixed(1)}px, 0, 0) skewX(${skew.toFixed(2)}deg)`;
-    }
-
-    if (lineA && lineB && currY < window.innerHeight * 1.2) {
-      lineA.style.transform = `translate3d(${(-currY * 0.08).toFixed(1)}px, 0, 0)`;
-      lineB.style.transform = `translate3d(${(currY * 0.08).toFixed(1)}px, 0, 0)`;
-    }
-  }
-  requestAnimationFrame(tickScrollMotion);
-}
-requestAnimationFrame(tickScrollMotion);
-
-// ---------------------------------------------------------------------------
-// 3. Magnetic Cursor-Attracted Pills + 1-Click Copy
-// ---------------------------------------------------------------------------
-document.querySelectorAll(".mag-pill").forEach((pill) => {
-  pill.addEventListener("pointermove", (e) => {
-    if (prefersReduced()) return;
-    const rect = pill.getBoundingClientRect();
-    const dx = (e.clientX - (rect.left + rect.width / 2)) * 0.18;
-    const dy = (e.clientY - (rect.top + rect.height / 2)) * 0.24;
-    pill.style.transform = `translate3d(${dx.toFixed(1)}px, ${dy.toFixed(1)}px, 0)`;
-  });
-  pill.addEventListener("pointerleave", () => {
-    pill.style.transform = "translate3d(0, 0, 0)";
-  });
-});
-
 document.querySelectorAll(".copy-trigger").forEach((btn) => {
   btn.addEventListener("click", async () => {
     const text = btn.dataset.copy || "";
     try {
       await navigator.clipboard.writeText(text);
     } catch {
-      // Ignore clipboard failures gracefully
+      // Ignore clipboard failures cleanly
     }
-    const label = btn.querySelector(".pill-state") || btn.querySelector("span") || btn.querySelector("code");
+    const label = btn.querySelector(".pill-state") || btn.querySelector("code");
     if (!label) return;
     const prev = label.textContent;
     label.textContent = "Copied";
@@ -231,256 +25,472 @@ document.querySelectorAll(".copy-trigger").forEach((btn) => {
 });
 
 // ---------------------------------------------------------------------------
-// 4. Live 2D Interruptible Spring Physics Playground
+// 2. Three.js Apple-Studio 3x3x3 CNC Machined Voxel Assembly
 // ---------------------------------------------------------------------------
-const canvas = document.getElementById("spring-canvas");
-const puck = document.getElementById("spring-puck");
-const trace = document.getElementById("spring-trace");
-const velReadout = document.getElementById("readout-vel");
-const stateReadout = document.getElementById("puck-state");
+const canvasEl = document.getElementById("webgl-canvas");
+const orbitZone = document.getElementById("hero-orbit-zone");
 const stiffnessInput = document.getElementById("ctrl-stiffness");
 const dampingInput = document.getElementById("ctrl-damping");
 const stiffnessVal = document.getElementById("val-stiffness");
 const dampingVal = document.getElementById("val-damping");
-const flickBtn = document.getElementById("flick-btn");
+const pulseBtn = document.getElementById("pulse-3d-btn");
 const reduceToggle = document.getElementById("reduce-motion-toggle");
 
-if (canvas && puck && trace && velReadout && stateReadout) {
-  let stiffness = Number(stiffnessInput.value);
-  let damping = Number(dampingInput.value);
+// Shared interactive state read by the 3D render loop
+const state3D = {
+  stiffness: Number(stiffnessInput?.value || 180),
+  damping: Number(dampingInput?.value || 14),
+  reduceMotion: false,
+  vaultSecure: false, // false = risky (vermilion tight lock), true = clean (emerald open ring)
+  pulseImpulse: 0,
+  spinX: 0,
+  spinY: 0,
+  velSpinX: 0,
+  velSpinY: 0,
+  pointerX: 0,
+  pointerY: 0,
+};
 
-  let x = 40;
-  let y = 100;
-  let vx = 0;
-  let vy = 0;
-  let targetX = 40;
-  let targetY = 100;
-  let detentIndex = 1;
+function createMachinedVoxelGeometry(size = 0.68, radius = 0.11, bevel = 0.045) {
+  const s = size * 0.5 - bevel;
+  const r = Math.min(radius, s * 0.45);
+  const shape = new THREE.Shape();
+  shape.moveTo(-s + r, -s);
+  shape.lineTo(s - r, -s);
+  shape.quadraticCurveTo(s, -s, s, -s + r);
+  shape.lineTo(s, s - r);
+  shape.quadraticCurveTo(s, s, s - r, s);
+  shape.lineTo(-s + r, s);
+  shape.quadraticCurveTo(-s, s, -s, s - r);
+  shape.lineTo(-s, -s + r);
+  shape.quadraticCurveTo(-s, -s, -s + r, -s);
 
-  let dragging = false;
-  let grabOffsetX = 0;
-  let grabOffsetY = 0;
-  let lastSampleX = 0;
-  let lastSampleY = 0;
-  let lastSampleT = 0;
-  let rafId = null;
+  const depth = size - bevel * 2;
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth,
+    bevelEnabled: true,
+    bevelThickness: bevel,
+    bevelSize: bevel,
+    bevelSegments: 4,
+    curveSegments: 8,
+  });
+  geo.center();
+  return geo;
+}
 
-  const traceHistory = new Array(80).fill(36);
+function buildAppleStudioEnvironment(renderer) {
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const studio = new THREE.Scene();
+  studio.background = new THREE.Color(0x0b0d10);
 
-  function getBounds() {
-    const w = canvas.clientWidth || 540;
-    const h = canvas.clientHeight || 310;
-    const pw = puck.offsetWidth || 174;
-    const ph = puck.offsetHeight || 82;
-    const cy = Math.round((h - ph) / 2);
-    const leftX = Math.round(w * 0.26 - pw / 2);
-    const rightX = Math.round(w * 0.74 - pw / 2);
-    return { w, h, pw, ph, cy, leftX: Math.max(16, leftX), rightX: Math.min(w - pw - 16, rightX) };
+  const makePanel = (color, intensity, w, h, pos, lookAt) => {
+    const mat = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(color).multiplyScalar(intensity),
+      side: THREE.DoubleSide,
+    });
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+    mesh.position.set(...pos);
+    mesh.lookAt(...lookAt);
+    studio.add(mesh);
+  };
+
+  // Classic Apple Keynote softbox rig: crisp overhead diffuser + bright side rim panels
+  makePanel(0xfffcf5, 5.2, 14, 4, [0, 8, 2], [0, 0, 0]);
+  makePanel(0xdbeafe, 3.6, 8, 12, [-9, 2, 4], [0, 0, 0]);
+  makePanel(0xffedd5, 3.8, 8, 12, [9, -1, 5], [0, 0, 0]);
+  makePanel(0xffffff, 2.8, 10, 6, [0, -7, 4], [0, 0, 0]);
+  makePanel(0xffffff, 2.4, 12, 12, [0, 3, -9], [0, 0, 0]);
+
+  const envRT = pmrem.fromScene(studio, 0.035);
+  pmrem.dispose();
+  return envRT.texture;
+}
+
+let trigger3DPulse = () => {};
+
+if (canvasEl) {
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({
+      canvas: canvasEl,
+      antialias: true,
+      alpha: true,
+      powerPreference: "high-performance",
+    });
+  } catch {
+    renderer = null;
   }
 
-  function rubberBand(val, min, max) {
-    if (val < min) return min - Math.pow(min - val, 0.72);
-    if (val > max) return max + Math.pow(val - max, 0.72);
-    return val;
-  }
+  if (renderer) {
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    renderer.setSize(window.innerWidth, window.innerHeight, false);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.25;
 
-  function pushTrace(currX, tgtX) {
-    const offset = Math.max(-30, Math.min(30, (currX - tgtX) * 0.22));
-    traceHistory.shift();
-    traceHistory.push(36 - offset);
-    const pts = traceHistory
-      .map((py, idx) => `${((idx / (traceHistory.length - 1)) * 400).toFixed(1)},${py.toFixed(1)}`)
-      .join(" ");
-    trace.setAttribute("points", pts);
-  }
+    const scene = new THREE.Scene();
+    scene.environment = buildAppleStudioEnvironment(renderer);
 
-  function renderPuck() {
-    const tilt = dragging ? Math.max(-8, Math.min(8, vx * 0.004)) : Math.max(-6, Math.min(6, vx * 0.005));
-    puck.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) rotate(${tilt.toFixed(2)}deg)`;
-    velReadout.textContent = `v ${Math.round(vx)}, ${Math.round(vy)} px/s`;
-  }
+    const camera = new THREE.PerspectiveCamera(
+      40,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      60
+    );
+    camera.position.set(0, 0.45, 7.6);
 
-  let prevT = performance.now();
-  function tick(now) {
-    const dt = Math.min(0.032, (now - prevT) / 1000);
-    prevT = now;
+    // Key, Rim, and Dynamic Core Lights
+    scene.add(new THREE.AmbientLight(0xffffff, 0.48));
 
-    if (!dragging) {
-      if (reduceToggle.checked || prefersReduced()) {
-        x = targetX;
-        y = targetY;
-        vx = 0;
-        vy = 0;
-        renderPuck();
-        pushTrace(x, targetX);
-        stateReadout.textContent = "Reduced 200ms";
-        rafId = null;
-        return;
+    const keyLight = new THREE.DirectionalLight(0xfff7ed, 2.8);
+    keyLight.position.set(5, 7, 8);
+    scene.add(keyLight);
+
+    const rimLight = new THREE.DirectionalLight(0xcbd5e1, 2.2);
+    rimLight.position.set(-6, 3, -5);
+    scene.add(rimLight);
+
+    const accentColor = new THREE.Color(0xe84a27);
+    const vermilionColor = new THREE.Color(0xe84a27);
+    const emeraldColor = new THREE.Color(0x10b981);
+
+    const coreLight = new THREE.PointLight(0xe84a27, 8, 12, 1.5);
+    scene.add(coreLight);
+
+    // Sculpture Root (positioned smoothly left/center/right across chapters)
+    const rootGroup = new THREE.Group();
+    scene.add(rootGroup);
+
+    // Materials: Anodized Space Titanium & Dark Graphite voxels + Glowing Core
+    const titaniumMat = new THREE.MeshPhysicalMaterial({
+      color: 0x525860,
+      metalness: 0.88,
+      roughness: 0.2,
+      clearcoat: 0.9,
+      clearcoatRoughness: 0.12,
+      envMapIntensity: 1.75,
+    });
+
+    const obsidianMat = new THREE.MeshPhysicalMaterial({
+      color: 0x262a2e,
+      metalness: 0.82,
+      roughness: 0.26,
+      clearcoat: 0.85,
+      clearcoatRoughness: 0.15,
+      envMapIntensity: 1.55,
+    });
+
+    const voxelGeo = createMachinedVoxelGeometry(0.66, 0.1, 0.045);
+
+    // Optical Glowing Inner Core
+    const coreMat = new THREE.MeshPhysicalMaterial({
+      color: 0xffffff,
+      emissive: 0xe84a27,
+      emissiveIntensity: 1.9,
+      metalness: 0.15,
+      roughness: 0.12,
+      transmission: 0.35,
+    });
+    const coreMesh = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(0.62, 1),
+      coreMat
+    );
+    const coreWire = new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.92, 0),
+      new THREE.MeshBasicMaterial({
+        color: 0xe84a27,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.48,
+      })
+    );
+    rootGroup.add(coreMesh, coreWire);
+
+    // Build 26 Outer CNC-Machined Voxels (3x3x3 minus center)
+    const voxels = [];
+    const STEP = 0.74;
+    let ringIdx = 0;
+
+    for (let ix = -1; ix <= 1; ix++) {
+      for (let iy = -1; iy <= 1; iy++) {
+        for (let iz = -1; iz <= 1; iz++) {
+          if (ix === 0 && iy === 0 && iz === 0) continue;
+
+          const home = new THREE.Vector3(ix * STEP, iy * STEP, iz * STEP);
+          const dir = home.clone().normalize();
+          const exploded = dir.clone().multiplyScalar(2.25 + ((ix + iy + iz + 3) % 3) * 0.42);
+          exploded.y += Math.sin(ringIdx * 1.1) * 0.45;
+
+          const mesh = new THREE.Mesh(
+            voxelGeo,
+            (ix + iy + iz) % 2 === 0 ? titaniumMat : obsidianMat
+          );
+          mesh.position.copy(home);
+          rootGroup.add(mesh);
+
+          voxels.push({
+            mesh,
+            home,
+            dir,
+            exploded,
+            vel: new THREE.Vector3(),
+            rotVel: new THREE.Vector3(),
+            angle: (ringIdx / 26) * Math.PI * 2,
+            band: ringIdx % 2 === 0 ? 1 : -1,
+            phase: ringIdx * 0.7,
+          });
+          ringIdx++;
+        }
+      }
+    }
+
+    // Subtle orbital precision bezel rings around vault mode
+    const ringGeo = new THREE.TorusGeometry(2.35, 0.014, 12, 96);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0xf5f5f7,
+      transparent: true,
+      opacity: 0,
+    });
+    const vaultHalo = new THREE.Mesh(ringGeo, ringMat);
+    vaultHalo.rotation.x = Math.PI * 0.42;
+    rootGroup.add(vaultHalo);
+
+    trigger3DPulse = (strength = 12) => {
+      if (state3D.reduceMotion || prefersReduced()) return;
+      for (const v of voxels) {
+        v.vel.addScaledVector(v.dir, strength * (0.75 + Math.abs(Math.sin(v.phase)) * 0.55));
+        v.rotVel.set(
+          Math.sin(v.phase) * 4,
+          Math.cos(v.phase * 1.3) * 4,
+          Math.sin(v.phase * 0.7) * 3
+        );
+      }
+    };
+
+    // Hero Drag-to-Orbit + Click-to-Pulse Interaction
+    if (orbitZone) {
+      let dragging = false;
+      let startX = 0;
+      let startY = 0;
+      let lastX = 0;
+      let lastY = 0;
+      let moved = 0;
+
+      orbitZone.addEventListener("pointerdown", (e) => {
+        dragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        lastX = e.clientX;
+        lastY = e.clientY;
+        moved = 0;
+        orbitZone.setPointerCapture(e.pointerId);
+      });
+
+      orbitZone.addEventListener("pointermove", (e) => {
+        if (!dragging) return;
+        const dx = e.clientX - lastX;
+        const dy = e.clientY - lastY;
+        lastX = e.clientX;
+        lastY = e.clientY;
+        moved += Math.hypot(dx, dy);
+        state3D.velSpinY = dx * 0.018;
+        state3D.velSpinX = dy * 0.014;
+        state3D.spinY += state3D.velSpinY;
+        state3D.spinX += state3D.velSpinX;
+      });
+
+      orbitZone.addEventListener("pointerup", () => {
+        if (!dragging) return;
+        dragging = false;
+        if (moved < 8) {
+          trigger3DPulse(13);
+        }
+      });
+
+      orbitZone.addEventListener("pointercancel", () => {
+        dragging = false;
+      });
+    }
+
+    window.addEventListener("pointermove", (e) => {
+      state3D.pointerX = (e.clientX / window.innerWidth) * 2 - 1;
+      state3D.pointerY = (e.clientY / window.innerHeight) * 2 - 1;
+    });
+
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+      renderer.setSize(window.innerWidth, window.innerHeight, false);
+    });
+
+    // Helper: Measure exact continuous chapter progress across the 4 sections
+    const secHero = document.getElementById("top");
+    const secTactile = document.getElementById("tactile-ui");
+    const secSync = document.getElementById("skill-sync");
+    const secFinale = document.getElementById("install");
+
+    function getChapterWeights() {
+      const midY = window.scrollY + window.innerHeight * 0.5;
+      const centerOf = (el) => el.offsetTop + el.offsetHeight * 0.5;
+      const c0 = centerOf(secHero);
+      const c1 = centerOf(secTactile);
+      const c2 = centerOf(secSync);
+      const c3 = centerOf(secFinale);
+
+      const t01 = THREE.MathUtils.clamp((midY - c0) / Math.max(1, c1 - c0), 0, 1);
+      const t12 = THREE.MathUtils.clamp((midY - c1) / Math.max(1, c2 - c1), 0, 1);
+      const t23 = THREE.MathUtils.clamp((midY - c2) / Math.max(1, c3 - c2), 0, 1);
+
+      const wHero = 1 - t01;
+      const wTactile = t01 * (1 - t12);
+      const wSync = t12 * (1 - t23);
+      const wFinale = t23;
+      return { wHero, wTactile, wSync, wFinale };
+    }
+
+    // Main Render & Spring Physics Loop
+    let prevTime = performance.now();
+    const tmpTarget = new THREE.Vector3();
+
+    function animate(now) {
+      const dt = Math.min(0.032, (now - prevTime) / 1000);
+      prevTime = now;
+      const elapsed = now * 0.001;
+      const reduced = state3D.reduceMotion || prefersReduced();
+      const desktop = window.innerWidth > 900;
+
+      const { wHero, wTactile, wSync, wFinale } = getChapterWeights();
+
+      // Smoothly position entire 3D sculpture across viewport halves per chapter
+      const desiredGroupX = desktop ? wTactile * 1.95 - wSync * 1.95 : 0;
+      const desiredGroupY = wHero * 0.35 + wFinale * 0.45 + (desktop ? 0 : (wTactile + wSync) * 1.15);
+      const desiredGroupZ = wHero * 0.35 - (wTactile + wSync) * 0.25;
+
+      rootGroup.position.x = THREE.MathUtils.lerp(rootGroup.position.x, desiredGroupX, 0.08);
+      rootGroup.position.y = THREE.MathUtils.lerp(rootGroup.position.y, desiredGroupY, 0.08);
+      rootGroup.position.z = THREE.MathUtils.lerp(rootGroup.position.z, desiredGroupZ, 0.08);
+
+      // Gentle keynote auto-rotation + user drag inertia + subtle mouse parallax
+      if (!reduced) {
+        state3D.spinY += state3D.velSpinY + dt * (0.28 + wTactile * 0.15 + wSync * 0.25);
+        state3D.spinX += state3D.velSpinX;
+        state3D.velSpinY *= 0.93;
+        state3D.velSpinX *= 0.93;
       }
 
-      const ax = -stiffness * (x - targetX) - damping * vx;
-      const ay = -stiffness * (y - targetY) - damping * vy;
-      vx += ax * dt;
-      vy += ay * dt;
-      x += vx * dt;
-      y += vy * dt;
+      const targetRotX = 0.44 + state3D.spinX + (reduced ? 0 : state3D.pointerY * 0.14);
+      const targetRotY = -0.62 + state3D.spinY + (reduced ? 0 : state3D.pointerX * 0.18);
+      rootGroup.rotation.x = THREE.MathUtils.lerp(rootGroup.rotation.x, targetRotX, 0.1);
+      rootGroup.rotation.y = THREE.MathUtils.lerp(rootGroup.rotation.y, targetRotY, 0.1);
 
-      renderPuck();
-      pushTrace(x, targetX);
+      // Shift optical core color smoothly between Vermilion (#E84A27) & Emerald (#10B981)
+      const targetColor = wSync > 0.35 && state3D.vaultSecure ? emeraldColor : vermilionColor;
+      accentColor.lerp(targetColor, 0.08);
+      coreMat.emissive.copy(accentColor);
+      coreWire.material.color.copy(accentColor);
+      coreLight.color.copy(accentColor);
 
-      const settled =
-        Math.abs(x - targetX) < 0.35 &&
-        Math.abs(y - targetY) < 0.35 &&
-        Math.abs(vx) < 4 &&
-        Math.abs(vy) < 4;
-
-      if (settled) {
-        x = targetX;
-        y = targetY;
-        vx = 0;
-        vy = 0;
-        renderPuck();
-        stateReadout.textContent = "Catch mid-flight";
-        rafId = null;
-        return;
+      const coreReveal = Math.max(wTactile, wSync * 0.85);
+      coreMesh.scale.setScalar(0.55 + coreReveal * 0.65);
+      coreWire.scale.setScalar(0.65 + coreReveal * 0.72);
+      if (!reduced) {
+        coreMesh.rotation.y += dt * 0.8;
+        coreWire.rotation.z -= dt * 0.55;
       }
-      stateReadout.textContent = "In flight";
-    } else {
-      pushTrace(x, targetX);
+
+      vaultHalo.material.opacity = wSync * 0.26;
+      vaultHalo.scale.setScalar(state3D.vaultSecure ? 1.12 : 0.9);
+      if (!reduced) {
+        vaultHalo.rotation.z += dt * (state3D.vaultSecure ? 0.35 : -0.9);
+      }
+
+      // Compute target position & orientation for all 26 CNC-machined voxels
+      const vaultRadius = state3D.vaultSecure ? 2.55 : 1.95;
+
+      for (let i = 0; i < voxels.length; i++) {
+        const v = voxels[i];
+
+        // Vault orbital coordinates
+        const orbitAng = v.angle + (reduced ? 0 : elapsed * (0.45 * v.band));
+        const vxOrb = Math.cos(orbitAng) * vaultRadius;
+        const vzOrb = Math.sin(orbitAng) * vaultRadius;
+        const vyOrb = v.band * 0.55 + Math.sin(orbitAng * 2) * 0.32;
+
+        // Weighted blend across chapters
+        tmpTarget.set(
+          v.home.x * (wHero + wFinale) + v.exploded.x * wTactile + vxOrb * wSync,
+          v.home.y * (wHero + wFinale) + v.exploded.y * wTactile + vyOrb * wSync,
+          v.home.z * (wHero + wFinale) + v.exploded.z * wTactile + vzOrb * wSync
+        );
+
+        if (wTactile > 0.05 && !reduced) {
+          tmpTarget.y += Math.sin(elapsed * 1.4 + v.phase) * 0.14 * wTactile;
+        }
+
+        if (reduced) {
+          v.mesh.position.copy(tmpTarget);
+          v.mesh.rotation.set(0, 0, 0);
+          v.vel.set(0, 0, 0);
+          v.rotVel.set(0, 0, 0);
+        } else {
+          // Real harmonic spring integration: F = -k * (x - target) - c * v
+          const dx = v.mesh.position.x - tmpTarget.x;
+          const dy = v.mesh.position.y - tmpTarget.y;
+          const dz = v.mesh.position.z - tmpTarget.z;
+
+          v.vel.x += (-state3D.stiffness * dx - state3D.damping * v.vel.x) * dt;
+          v.vel.y += (-state3D.stiffness * dy - state3D.damping * v.vel.y) * dt;
+          v.vel.z += (-state3D.stiffness * dz - state3D.damping * v.vel.z) * dt;
+
+          v.mesh.position.addScaledVector(v.vel, dt);
+
+          // Spin decay back to crisp axis alignment
+          v.mesh.rotation.x = THREE.MathUtils.lerp(
+            v.mesh.rotation.x + v.rotVel.x * dt,
+            wTactile * Math.sin(elapsed + v.phase) * 0.35 + wSync * orbitAng * 0.2,
+            0.08
+          );
+          v.mesh.rotation.y = THREE.MathUtils.lerp(
+            v.mesh.rotation.y + v.rotVel.y * dt,
+            wTactile * Math.cos(elapsed + v.phase) * 0.35 + wSync * orbitAng,
+            0.08
+          );
+          v.rotVel.multiplyScalar(0.9);
+        }
+      }
+
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
     }
 
-    rafId = requestAnimationFrame(tick);
+    // Subtle opening pulse on initial page load
+    window.setTimeout(() => trigger3DPulse(7.5), 220);
+    requestAnimationFrame(animate);
   }
-
-  function ensureLoop() {
-    if (!rafId) {
-      prevT = performance.now();
-      rafId = requestAnimationFrame(tick);
-    }
-  }
-
-  function setDetent(idx) {
-    const b = getBounds();
-    detentIndex = idx;
-    targetX = idx === 0 ? b.leftX : b.rightX;
-    targetY = b.cy;
-  }
-
-  const initB = getBounds();
-  detentIndex = 1;
-  x = initB.rightX;
-  y = initB.cy;
-  targetX = initB.rightX;
-  targetY = initB.cy;
-  renderPuck();
-
-  window.addEventListener("resize", () => {
-    setDetent(detentIndex);
-    if (!dragging && !rafId) {
-      x = targetX;
-      y = targetY;
-      renderPuck();
-    }
-  });
-
-  puck.addEventListener("pointerdown", (e) => {
-    const rect = canvas.getBoundingClientRect();
-    dragging = true;
-    grabOffsetX = e.clientX - rect.left - x;
-    grabOffsetY = e.clientY - rect.top - y;
-    lastSampleX = e.clientX;
-    lastSampleY = e.clientY;
-    lastSampleT = performance.now();
-    vx = 0;
-    vy = 0;
-    puck.setPointerCapture(e.pointerId);
-    stateReadout.textContent = "Tracking 1:1";
-    ensureLoop();
-  });
-
-  puck.addEventListener("pointermove", (e) => {
-    if (!dragging) return;
-    const now = performance.now();
-    const dt = Math.max(2, now - lastSampleT) / 1000;
-    vx = Math.max(-2200, Math.min(2200, (e.clientX - lastSampleX) / dt));
-    vy = Math.max(-2200, Math.min(2200, (e.clientY - lastSampleY) / dt));
-    lastSampleX = e.clientX;
-    lastSampleY = e.clientY;
-    lastSampleT = now;
-
-    const b = getBounds();
-    const rect = canvas.getBoundingClientRect();
-    const rawX = e.clientX - rect.left - grabOffsetX;
-    const rawY = e.clientY - rect.top - grabOffsetY;
-    x = rubberBand(rawX, 12, b.w - b.pw - 12);
-    y = rubberBand(rawY, 12, b.h - b.ph - 12);
-    renderPuck();
-  });
-
-  function releaseDrag() {
-    if (!dragging) return;
-    dragging = false;
-    const b = getBounds();
-    const projectedX = x + vx * 0.14;
-    const mid = (b.leftX + b.rightX) / 2;
-    setDetent(projectedX < mid ? 0 : 1);
-    ensureLoop();
-  }
-
-  puck.addEventListener("pointerup", releaseDrag);
-  puck.addEventListener("pointercancel", () => {
-    dragging = false;
-    setDetent(detentIndex);
-    ensureLoop();
-  });
-
-  flickBtn?.addEventListener("click", () => {
-    const nextIdx = detentIndex === 0 ? 1 : 0;
-    const dir = nextIdx === 1 ? 1 : -1;
-    setDetent(nextIdx);
-    if (reduceToggle.checked || prefersReduced()) {
-      puck.style.transition = "transform 200ms ease";
-      x = targetX;
-      y = targetY;
-      renderPuck();
-      stateReadout.textContent = "Reduced 200ms";
-      return;
-    }
-    puck.style.transition = "none";
-    vx = dir * 1350;
-    vy = -260;
-    ensureLoop();
-  });
-
-  stiffnessInput?.addEventListener("input", () => {
-    stiffness = Number(stiffnessInput.value);
-    stiffnessVal.textContent = String(stiffness);
-  });
-
-  dampingInput?.addEventListener("input", () => {
-    damping = Number(dampingInput.value);
-    dampingVal.textContent = String(damping);
-  });
-
-  reduceToggle.addEventListener("change", () => {
-    if (reduceToggle.checked) {
-      puck.style.transition = "transform 200ms ease";
-      x = targetX;
-      y = targetY;
-      vx = 0;
-      vy = 0;
-      renderPuck();
-      stateReadout.textContent = "Reduced 200ms";
-    } else {
-      puck.style.transition = "none";
-      stateReadout.textContent = "Catch mid-flight";
-    }
-  });
 }
 
 // ---------------------------------------------------------------------------
-// 5. Interactive Pre-Pull Diff Switcher
+// 3. Wire UI Controls Directly Into the 3D Scene
 // ---------------------------------------------------------------------------
+stiffnessInput?.addEventListener("input", () => {
+  state3D.stiffness = Number(stiffnessInput.value);
+  stiffnessVal.textContent = String(state3D.stiffness);
+});
+
+dampingInput?.addEventListener("input", () => {
+  state3D.damping = Number(dampingInput.value);
+  dampingVal.textContent = String(state3D.damping);
+});
+
+pulseBtn?.addEventListener("click", () => {
+  trigger3DPulse(14);
+});
+
+reduceToggle?.addEventListener("change", () => {
+  state3D.reduceMotion = reduceToggle.checked;
+});
+
+// Pre-Pull Diff Switcher (also updates the 3D Security Vault state live!)
 const DIFF_MODES = {
   risky: {
     file: "definitely-not-a-virus/SKILL.md",
@@ -515,8 +525,11 @@ const diffVerdict = document.getElementById("diff-verdict");
 
 diffTabs.forEach((btn) => {
   btn.addEventListener("click", () => {
-    const m = DIFF_MODES[btn.dataset.diffMode];
+    const modeKey = btn.dataset.diffMode;
+    const m = DIFF_MODES[modeKey];
     if (!m) return;
+    state3D.vaultSecure = modeKey === "clean";
+    trigger3DPulse(6.5);
     diffTabs.forEach((t) => t.classList.toggle("is-active", t === btn));
     diffFile.textContent = m.file;
     diffCount.textContent = m.countText;

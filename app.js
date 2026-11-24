@@ -44,6 +44,7 @@ const state3D = {
   guardFiltered: true,
   lookbookReal: true,
   snapRewound: true,
+  canonLocked: true,
   spinX: 0,
   spinY: 0,
   velSpinX: 0,
@@ -447,6 +448,7 @@ if (canvasEl) {
     const secGuard = document.getElementById("token-guard");
     const secLookbook = document.getElementById("lookbook");
     const secSnap = document.getElementById("snap");
+    const secCanon = document.getElementById("canon");
     const secFinale = document.getElementById("install");
 
     function getChapterWeights() {
@@ -459,7 +461,8 @@ if (canvasEl) {
       const c3 = centerOf(secGuard);
       const c4 = centerOf(secLookbook);
       const c5 = centerOf(secSnap);
-      const c6 = Math.min(centerOf(secFinale), maxMidY - window.innerHeight * 0.06);
+      const c6 = centerOf(secCanon);
+      const c7 = Math.min(centerOf(secFinale), maxMidY - window.innerHeight * 0.06);
 
       const ease = (t) => t * t * (3 - 2 * t);
       const r01 = THREE.MathUtils.clamp((midY - c0) / Math.max(1, c1 - c0), 0, 1);
@@ -468,6 +471,7 @@ if (canvasEl) {
       const r34 = THREE.MathUtils.clamp((midY - c3) / Math.max(1, c4 - c3), 0, 1);
       const r45 = THREE.MathUtils.clamp((midY - c4) / Math.max(1, c5 - c4), 0, 1);
       const r56 = THREE.MathUtils.clamp((midY - c5) / Math.max(1, c6 - c5), 0, 1);
+      const r67 = THREE.MathUtils.clamp((midY - c6) / Math.max(1, c7 - c6), 0, 1);
 
       const t01 = ease(r01);
       const t12 = ease(r12);
@@ -475,6 +479,7 @@ if (canvasEl) {
       const t34 = ease(r34);
       const t45 = ease(r45);
       const t56 = ease(r56);
+      const t67 = ease(r67);
 
       return {
         wHero: 1 - t01,
@@ -483,7 +488,8 @@ if (canvasEl) {
         wGuard: t23 * (1 - t34),
         wLookbook: t34 * (1 - t45),
         wSnap: t45 * (1 - t56),
-        wFinale: t56,
+        wCanon: t56 * (1 - t67),
+        wFinale: t67,
       };
     }
 
@@ -497,21 +503,21 @@ if (canvasEl) {
       const reduced = state3D.reduceMotion || prefersReduced();
       const desktop = window.innerWidth > 900;
 
-      const { wHero, wTactile, wSync, wGuard, wLookbook, wSnap, wFinale } = getChapterWeights();
+      const { wHero, wTactile, wSync, wGuard, wLookbook, wSnap, wCanon, wFinale } = getChapterWeights();
 
       const groupLerp = 1 - Math.exp(-5.5 * dt);
       const rotLerp = 1 - Math.exp(-6.5 * dt);
 
       const desiredGroupX = desktop
-        ? (wTactile + wGuard + wSnap) * 1.95 - (wSync + wLookbook) * 1.95
+        ? (wTactile + wGuard + wSnap) * 1.95 - (wSync + wLookbook + wCanon) * 1.95
         : 0;
       const desiredGroupY =
         wHero * 0.62 +
         wFinale * 0.54 +
         (reduced ? 0 : Math.sin(elapsed * 1.1) * 0.06 * (wHero + wFinale)) +
-        (desktop ? 0 : (wTactile + wSync + wGuard + wLookbook + wSnap) * 1.15);
+        (desktop ? 0 : (wTactile + wSync + wGuard + wLookbook + wSnap + wCanon) * 1.15);
       const desiredGroupZ =
-        (wHero + wFinale) * 0.30 - (wTactile + wSync + wGuard + wLookbook + wSnap) * 0.22;
+        (wHero + wFinale) * 0.30 - (wTactile + wSync + wGuard + wLookbook + wSnap + wCanon) * 0.22;
 
       rootGroup.position.x = THREE.MathUtils.lerp(rootGroup.position.x, desiredGroupX, groupLerp);
       rootGroup.position.y = THREE.MathUtils.lerp(rootGroup.position.y, desiredGroupY, groupLerp);
@@ -520,7 +526,7 @@ if (canvasEl) {
       if (!reduced) {
         state3D.spinY +=
           state3D.velSpinY +
-          dt * (0.26 + wTactile * 0.10 + wSync * 0.14 + wGuard * 0.12 + wLookbook * 0.14 + wSnap * 0.12);
+          dt * (0.26 + wTactile * 0.10 + wSync * 0.14 + wGuard * 0.12 + wLookbook * 0.14 + wSnap * 0.12 + wCanon * 0.12);
         state3D.spinX += state3D.velSpinX;
         state3D.velSpinY *= Math.exp(-4.5 * dt);
         state3D.velSpinX *= Math.exp(-4.5 * dt);
@@ -533,7 +539,9 @@ if (canvasEl) {
 
       // Dynamic inner tourbillon & core color
       let targetColor = vermilionColor;
-      if (wSnap > 0.35 && state3D.snapRewound) {
+      if (wCanon > 0.35 && state3D.canonLocked) {
+        targetColor = emeraldColor;
+      } else if (wSnap > 0.35 && state3D.snapRewound) {
         targetColor = emeraldColor;
       } else if (wLookbook > 0.35 && state3D.lookbookReal) {
         targetColor = amberColor;
@@ -546,7 +554,7 @@ if (canvasEl) {
       coreMat.emissive.copy(accentColor);
       coreLight.color.copy(accentColor);
 
-      const coreScale = 0.46 + Math.max(wTactile, wSync, wGuard, wLookbook, wSnap) * 0.66;
+      const coreScale = 0.46 + Math.max(wTactile, wSync, wGuard, wLookbook, wSnap, wCanon) * 0.66;
       coreAssembly.scale.setScalar(coreScale);
       if (!reduced) {
         gimbalA.rotation.x += dt * 0.9;
@@ -559,23 +567,28 @@ if (canvasEl) {
         wSync * 0.28 +
         wGuard * (state3D.guardFiltered ? 0.16 : 0) +
         wLookbook * (state3D.lookbookReal ? 0.24 : 0) +
-        wSnap * (state3D.snapRewound ? 0.22 : 0);
+        wSnap * (state3D.snapRewound ? 0.22 : 0) +
+        wCanon * (state3D.canonLocked ? 0.22 : 0);
       vaultHalo.scale.setScalar(
-        wSnap > wLookbook
-          ? state3D.snapRewound
-            ? 0.92
+        wCanon > wSnap
+          ? state3D.canonLocked
+            ? 1.02
             : 1.32
-          : wLookbook > wGuard && wLookbook > wSync
-            ? state3D.lookbookReal
-              ? 1.08
-              : 0.75
-            : wGuard > wSync
-              ? state3D.guardFiltered
-                ? 0.86
-                : 1.25
-              : state3D.vaultSecure
-                ? 1.14
-                : 0.94
+          : wSnap > wLookbook
+            ? state3D.snapRewound
+              ? 0.92
+              : 1.32
+            : wLookbook > wGuard && wLookbook > wSync
+              ? state3D.lookbookReal
+                ? 1.08
+                : 0.75
+              : wGuard > wSync
+                ? state3D.guardFiltered
+                  ? 0.86
+                  : 1.25
+                : state3D.vaultSecure
+                  ? 1.14
+                  : 0.94
       );
 
       if (!reduced) {
@@ -601,7 +614,7 @@ if (canvasEl) {
       const tierR = state3D.vaultSecure ? 1.95 : 1.62;
       const tierY = state3D.vaultSecure ? 1.06 : 0.96;
       const capY = state3D.vaultSecure ? 1.82 : 1.66;
-      const wOpen = wTactile + wSync + wGuard + wLookbook + wSnap;
+      const wOpen = wTactile + wSync + wGuard + wLookbook + wSnap + wCanon;
 
       for (let i = 0; i < voxels.length; i++) {
         const v = voxels[i];
@@ -670,27 +683,47 @@ if (canvasEl) {
           }
         }
 
+        // Canon Art Bible prism (structured grid lock vs scattered off-palette drift)
+        let vxCanon = 0;
+        let vyCanon = 0;
+        let vzCanon = 0;
+        if (wCanon > 0.001) {
+          if (state3D.canonLocked) {
+            vxCanon = v.home.x * 1.48;
+            vyCanon = v.home.y * 1.48;
+            vzCanon = v.home.z * 1.48;
+          } else {
+            const scatter = reduced ? 0 : Math.sin(elapsed * 2.2 + v.phase) * 0.32;
+            vxCanon = v.exploded.x * 0.92 + Math.sin(v.phase) * 0.24;
+            vyCanon = v.exploded.y * 0.92 + scatter;
+            vzCanon = v.exploded.z * 0.92 + Math.cos(v.phase * 1.5) * 0.24;
+          }
+        }
+
         const baseX =
           v.home.x * (wHero + wFinale) +
           v.exploded.x * wTactile +
           vxOrb * wSync +
           vxGuard * wGuard +
           vxLook * wLookbook +
-          vxSnap * wSnap;
+          vxSnap * wSnap +
+          vxCanon * wCanon;
         const baseY =
           v.home.y * (wHero + wFinale) +
           v.exploded.y * wTactile +
           vyOrb * wSync +
           vyGuard * wGuard +
           vyLook * wLookbook +
-          vySnap * wSnap;
+          vySnap * wSnap +
+          vyCanon * wCanon;
         const baseZ =
           v.home.z * (wHero + wFinale) +
           v.exploded.z * wTactile +
           vzOrb * wSync +
           vzGuard * wGuard +
           vzLook * wLookbook +
-          vzSnap * wSnap;
+          vzSnap * wSnap +
+          vzCanon * wCanon;
 
         const tierAng = v.tier === 0 ? midTierAngle : outerTierAngle;
         const cT = Math.cos(tierAng);
@@ -991,5 +1024,55 @@ snapTabs.forEach((btn) => {
     snapPre.innerHTML = `<code>${s.codeHtml}</code>`;
     snapVerdict.className = `diff-verdict ${s.rewound ? "is-compressed" : "is-blocked"}`;
     snapVerdict.innerHTML = `<strong>${s.verdictText}</strong><code>${s.verdictMeta}</code>`;
+  });
+});
+
+const CANON_MODES = {
+  locked: {
+    file: "CANON.md + canon.json",
+    countText: "0 violations",
+    locked: true,
+    codeHtml:
+      `<span class="d-add-safe">✓ Palette locked: #040605 · #163F32 · #F6F2EA · #10B981</span>\n` +
+      `<span class="d-add-safe">✓ Fonts: Plus Jakarta Sans + JetBrains Mono</span>\n` +
+      `<span class="d-add-safe">✓ User overrides: allow-color / canon-ignore supported</span>\n` +
+      `<span class="d-ctx">  canon.py check: 0 off-palette hexes</span>`,
+    verdictText: "Locked on-brand · Evolves cleanly when asked",
+    verdictMeta: "python3 scripts/canon.py check",
+  },
+  drift: {
+    file: "src/Card.tsx + styles.css",
+    countText: "2 drifts caught",
+    locked: false,
+    codeHtml:
+      `<span class="d-add-risk">✕ Card.tsx:14 [off-palette-color] #8B5CF6</span>\n` +
+      `<span class="d-add-risk">✕ styles.css:28 [banned-font] 'Comic Sans MS'</span>\n` +
+      `<span class="d-add-safe">+ Want it? User override via allow-color or canon-ignore</span>\n` +
+      `<span class="d-ctx">  Stops accidental drift, never blocks direct user asks</span>`,
+    verdictText: "Accidental drift caught before shipping",
+    verdictMeta: 'enforce: "warn" | "block"',
+  },
+};
+
+const canonTabs = document.querySelectorAll("[data-canon-mode]");
+const canonFile = document.getElementById("canon-file");
+const canonCount = document.getElementById("canon-count");
+const canonPre = document.getElementById("canon-pre");
+const canonVerdict = document.getElementById("canon-verdict");
+
+canonTabs.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const modeKey = btn.dataset.canonMode;
+    const c = CANON_MODES[modeKey];
+    if (!c) return;
+    state3D.canonLocked = c.locked;
+    trigger3DPulse(6.5);
+    canonTabs.forEach((t) => t.classList.toggle("is-active", t === btn));
+    canonFile.textContent = c.file;
+    canonCount.textContent = c.countText;
+    canonCount.className = `diff-count ${c.locked ? "is-compressed" : "is-blocked"}`;
+    canonPre.innerHTML = `<code>${c.codeHtml}</code>`;
+    canonVerdict.className = `diff-verdict ${c.locked ? "is-compressed" : "is-blocked"}`;
+    canonVerdict.innerHTML = `<strong>${c.verdictText}</strong><code>${c.verdictMeta}</code>`;
   });
 });

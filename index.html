@@ -7,14 +7,14 @@
     <title>jaxels — Agent skills, machined.</title>
     <meta
       name="description"
-      content="Open-source SKILL.md agent skills by jaxels1 for Claude Code, OpenAI Codex, Cursor, Antigravity, and Gemini CLI: tactile-ui, skill-sync, token-guard, lookbook, and snap."
+      content="Open-source SKILL.md agent skills by jaxels1 for Claude Code, OpenAI Codex, Cursor, Antigravity, and Gemini CLI: tactile-ui, skill-sync, token-guard, lookbook, snap, and canon."
     />
     <link rel="canonical" href="https://jaxels1.github.io/" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="jaxels — Agent skills, machined." />
     <meta
       property="og:description"
-      content="Interactive 3D showcase for tactile-ui, skill-sync, token-guard, lookbook, and snap."
+      content="Interactive 3D showcase for tactile-ui, skill-sync, token-guard, lookbook, snap, and canon."
     />
     <meta property="og:url" content="https://jaxels1.github.io/" />
     <meta
@@ -27,7 +27,7 @@
       href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=17" />
+    <link rel="stylesheet" href="./styles.css?v=18" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -36,7 +36,7 @@
             "@type": "WebSite",
             "name": "jaxels",
             "url": "https://jaxels1.github.io/",
-            "description": "Open-source SKILL.md hub for tactile-ui, skill-sync, token-guard, lookbook, and snap."
+            "description": "Open-source SKILL.md hub for tactile-ui, skill-sync, token-guard, lookbook, snap, and canon."
           },
           {
             "@type": "ItemList",
@@ -105,6 +105,19 @@
                   "codeRepository": "https://github.com/jaxels1/snap",
                   "description": "Silent per-turn Git shadow checkpoints (refs/snap/*) before AI coding agent edits, with turn debouncing and undoable undo."
                 }
+              },
+              {
+                "@type": "ListItem",
+                "position": 6,
+                "item": {
+                  "@type": "SoftwareApplication",
+                  "name": "canon",
+                  "applicationCategory": "DeveloperApplication",
+                  "operatingSystem": "macOS, Windows, Linux",
+                  "url": "https://github.com/jaxels1/canon",
+                  "codeRepository": "https://github.com/jaxels1/canon",
+                  "description": "Living per-project Art Bible (CANON.md + canon.json) and visual drift checker that keeps edits on-brand while honoring user overrides."
+                }
               }
             ]
           }
@@ -142,6 +155,7 @@
           <a href="#token-guard">token-guard</a>
           <a href="#lookbook">lookbook</a>
           <a href="#snap">snap</a>
+          <a href="#canon">canon</a>
           <a href="https://github.com/jaxels1" target="_blank" rel="noreferrer">GitHub</a>
         </nav>
       </div>
@@ -196,6 +210,14 @@
               data-copy="npx skills add jaxels1/snap"
             >
               <code>npx skills add jaxels1/snap</code>
+              <span class="pill-state">Copy</span>
+            </button>
+            <button
+              type="button"
+              class="glass-pill copy-trigger"
+              data-copy="npx skills add jaxels1/canon"
+            >
+              <code>npx skills add jaxels1/canon</code>
               <span class="pill-state">Copy</span>
             </button>
           </div>
@@ -597,8 +619,91 @@
         </div>
       </section>
 
-      <!-- CHAPTER 6: Re-assembled Monolith Finale -->
-      <section id="install" class="chapter chapter-finale" data-chapter="6">
+      <!-- CHAPTER 6: canon (Right Frosted Glass Panel + Left 3D Art Bible Prism) -->
+      <section id="canon" class="chapter chapter-split" data-chapter="6">
+        <div class="chapter-inner align-right">
+          <article class="glass-panel">
+            <div class="panel-head">
+              <h2>canon</h2>
+              <div class="panel-links">
+                <a href="https://github.com/jaxels1/canon" target="_blank" rel="noreferrer">GitHub</a>
+                <a href="https://github.com/jaxels1/canon/blob/main/SKILL.md" target="_blank" rel="noreferrer">Docs</a>
+              </div>
+            </div>
+
+            <p class="panel-copy">
+              Living per-project Art Bible (<code>CANON.md</code> + <code>canon.json</code>) and
+              zero-dependency drift checker—keeps every UI, video, and copy edit on-brand while
+              always honoring explicit user overrides.
+            </p>
+
+            <!-- Interactive Canon Drift Switcher driving 3D Art Bible Sculpture -->
+            <div class="diff-block">
+              <div class="diff-bar">
+                <span class="diff-label">Brand check: CANON.md</span>
+                <div class="diff-tabs" role="group" aria-label="Switch canon mode preview">
+                  <button type="button" class="diff-tab is-active" data-canon-mode="locked">
+                    On-Brand
+                  </button>
+                  <button type="button" class="diff-tab" data-canon-mode="drift">
+                    Drift Blocked
+                  </button>
+                </div>
+              </div>
+
+              <div class="diff-surface">
+                <div class="diff-meta">
+                  <code id="canon-file">CANON.md + canon.json</code>
+                  <span class="diff-count is-compressed" id="canon-count">0 violations</span>
+                </div>
+                <pre class="diff-pre" id="canon-pre"><code><span class="d-add-safe">✓ Palette locked: #040605 · #163F32 · #F6F2EA · #10B981</span>
+<span class="d-add-safe">✓ Fonts: Plus Jakarta Sans + JetBrains Mono</span>
+<span class="d-add-safe">✓ User overrides: allow-color / canon-ignore supported</span>
+<span class="d-ctx">  canon.py check: 0 off-palette hexes</span></code></pre>
+                <div class="diff-verdict is-compressed" id="canon-verdict">
+                  <strong>Locked on-brand · Evolves cleanly when asked</strong>
+                  <code>python3 scripts/canon.py check</code>
+                </div>
+              </div>
+            </div>
+
+            <div class="cmd-grid" aria-label="canon CLI commands">
+              <button type="button" class="cmd-btn copy-trigger" data-copy="python3 scripts/canon.py init --scan">
+                <code>canon init</code>
+              </button>
+              <button type="button" class="cmd-btn copy-trigger" data-copy="python3 scripts/canon.py scan">
+                <code>canon scan</code>
+              </button>
+              <button type="button" class="cmd-btn copy-trigger" data-copy="python3 scripts/canon.py check">
+                <code>canon check</code>
+              </button>
+              <button type="button" class="cmd-btn copy-trigger" data-copy='python3 scripts/canon.py allow-color "#10B981"'>
+                <code>allow-color</code>
+              </button>
+            </div>
+
+            <div class="media-box">
+              <img
+                src="https://raw.githubusercontent.com/jaxels1/canon/main/assets/demo.gif"
+                alt="canon living Art Bible CANON.md and visual drift checker demo"
+                loading="lazy"
+              />
+            </div>
+
+            <button
+              type="button"
+              class="glass-pill panel-copy-btn copy-trigger"
+              data-copy="npx skills add jaxels1/canon"
+            >
+              <code>npx skills add jaxels1/canon</code>
+              <span class="pill-state">Copy</span>
+            </button>
+          </article>
+        </div>
+      </section>
+
+      <!-- CHAPTER 7: Re-assembled Monolith Finale -->
+      <section id="install" class="chapter chapter-finale" data-chapter="7">
         <div class="finale-content">
           <h2>Install in one command.</h2>
           <div class="hero-pills">
@@ -642,6 +747,14 @@
               <code>npx skills add jaxels1/snap</code>
               <span class="pill-state">Copy</span>
             </button>
+            <button
+              type="button"
+              class="glass-pill copy-trigger"
+              data-copy="npx skills add jaxels1/canon"
+            >
+              <code>npx skills add jaxels1/canon</code>
+              <span class="pill-state">Copy</span>
+            </button>
           </div>
         </div>
 
@@ -654,11 +767,12 @@
             <a href="https://jaxels1.github.io/token-guard/" target="_blank" rel="noreferrer">token-guard</a>
             <a href="https://github.com/jaxels1/lookbook" target="_blank" rel="noreferrer">lookbook</a>
             <a href="https://github.com/jaxels1/snap" target="_blank" rel="noreferrer">snap</a>
+            <a href="https://github.com/jaxels1/canon" target="_blank" rel="noreferrer">canon</a>
           </div>
         </footer>
       </section>
     </main>
 
-    <script type="module" src="./app.js?v=17"></script>
+    <script type="module" src="./app.js?v=18"></script>
   </body>
 </html>

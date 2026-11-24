@@ -185,21 +185,28 @@ if (canvasEl) {
   }
 
   if (renderer) {
-    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-    renderer.setSize(window.innerWidth, window.innerHeight, false);
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.28;
-
-    const scene = new THREE.Scene();
-    scene.environment = buildAppleStudioEnvironment(renderer);
-
     const camera = new THREE.PerspectiveCamera(
       39,
       window.innerWidth / window.innerHeight,
       0.1,
       60
     );
-    camera.position.set(0, 0.42, 7.75);
+    const updateCameraLayout = () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const isPortrait = w < h;
+      camera.aspect = w / h;
+      camera.position.set(0, 0.42, isPortrait ? 10.8 : w <= 900 ? 9.0 : 7.75);
+      camera.updateProjectionMatrix();
+      renderer.setPixelRatio(Math.min(w <= 768 ? 1.5 : 2, window.devicePixelRatio || 1));
+      renderer.setSize(w, h, false);
+    };
+    updateCameraLayout();
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.28;
+
+    const scene = new THREE.Scene();
+    scene.environment = buildAppleStudioEnvironment(renderer);
 
     scene.add(new THREE.AmbientLight(0xffffff, 0.55));
 
@@ -435,12 +442,7 @@ if (canvasEl) {
       state3D.pointerY = (e.clientY / window.innerHeight) * 2 - 1;
     });
 
-    window.addEventListener("resize", () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-      renderer.setSize(window.innerWidth, window.innerHeight, false);
-    });
+    window.addEventListener("resize", updateCameraLayout);
 
     const secHero = document.getElementById("top");
     const secTactile = document.getElementById("tactile-ui");
@@ -512,7 +514,7 @@ if (canvasEl) {
         ? (wTactile + wGuard + wSnap) * 1.95 - (wSync + wLookbook + wCanon) * 1.95
         : 0;
       const desiredGroupY =
-        wHero * 0.62 +
+        (desktop ? wHero * 0.62 : wHero * 1.15) +
         wFinale * 0.54 +
         (reduced ? 0 : Math.sin(elapsed * 1.1) * 0.06 * (wHero + wFinale)) +
         (desktop ? 0 : (wTactile + wSync + wGuard + wLookbook + wSnap + wCanon) * 1.15);

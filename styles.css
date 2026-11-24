@@ -109,6 +109,7 @@ code {
   max-width: 1220px;
   margin: 0 auto;
   padding: 0 28px;
+  scroll-margin-top: 72px;
 }
 
 .chapter-hero {
@@ -454,6 +455,8 @@ code {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
   font-size: 12px;
 }
 
@@ -468,6 +471,7 @@ code {
   font-size: 12px;
   line-height: 1.65;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   overflow-x: hidden;
   scrollbar-width: none;
 }
@@ -487,6 +491,7 @@ code {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   font-size: 12px;
 }
@@ -579,6 +584,128 @@ code {
   }
   .cmd-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .header-inner {
+    padding: 0 16px;
+    gap: 12px;
+  }
+  .brand {
+    flex-shrink: 0;
+  }
+  .header-nav {
+    overflow-x: auto;
+    white-space: nowrap;
+    gap: 14px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding-right: 12px;
+    -webkit-mask-image: linear-gradient(to right, black 88%, transparent);
+    mask-image: linear-gradient(to right, black 88%, transparent);
+  }
+  .header-nav::-webkit-scrollbar {
+    display: none;
+  }
+  .header-nav a {
+    padding: 8px 2px;
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .chapter {
+    padding: 0 16px;
+  }
+  .chapter-hero {
+    padding-top: 72px;
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+  }
+  .hero-interaction-zone {
+    inset: 58px 0 320px 0;
+  }
+  .hero-bottom {
+    gap: 16px;
+    padding-top: 16px;
+  }
+  .hero-copy-block h1 {
+    font-size: clamp(28px, 8.5vw, 38px);
+  }
+  .hero-pills {
+    width: 100%;
+    gap: 8px;
+  }
+  .glass-pill {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 14px;
+    font-size: 12px;
+    gap: 10px;
+  }
+  .glass-pill code {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .chapter-split {
+    min-height: auto;
+    padding-top: 190px;
+    padding-bottom: 56px;
+  }
+  .glass-panel {
+    padding: 18px;
+    border-radius: 16px;
+    gap: 16px;
+    max-width: 100%;
+  }
+  .panel-head {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .panel-head h2 {
+    font-size: 26px;
+  }
+  .panel-links a {
+    padding: 8px 12px;
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .panel-copy {
+    font-size: 14px;
+  }
+  .pulse-btn,
+  .cmd-btn {
+    min-height: 40px;
+  }
+  .diff-tab {
+    padding: 7px 10px;
+  }
+  .diff-pre {
+    font-size: 11px;
+    padding: 10px 12px;
+  }
+  .chapter-finale {
+    min-height: auto;
+    padding-top: 84px;
+    padding-bottom: max(28px, env(safe-area-inset-bottom));
+    gap: 28px;
+  }
+  .site-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .footer-links {
+    flex-wrap: wrap;
+    gap: 12px 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .slider-grid {
+    grid-template-columns: 1fr;
   }
 }
 

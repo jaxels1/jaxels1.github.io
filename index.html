@@ -7,14 +7,14 @@
     <title>jaxels — Agent skills, machined.</title>
     <meta
       name="description"
-      content="Open-source SKILL.md agent skills by jaxels1 for Claude Code, OpenAI Codex, Cursor, Antigravity, and Gemini CLI: tactile-ui, skill-sync, token-guard, and lookbook."
+      content="Open-source SKILL.md agent skills by jaxels1 for Claude Code, OpenAI Codex, Cursor, Antigravity, and Gemini CLI: tactile-ui, skill-sync, token-guard, lookbook, and snap."
     />
     <link rel="canonical" href="https://jaxels1.github.io/" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="jaxels — Agent skills, machined." />
     <meta
       property="og:description"
-      content="Interactive 3D showcase for tactile-ui, skill-sync, token-guard, and lookbook."
+      content="Interactive 3D showcase for tactile-ui, skill-sync, token-guard, lookbook, and snap."
     />
     <meta property="og:url" content="https://jaxels1.github.io/" />
     <meta
@@ -27,7 +27,7 @@
       href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=16" />
+    <link rel="stylesheet" href="./styles.css?v=17" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -36,7 +36,7 @@
             "@type": "WebSite",
             "name": "jaxels",
             "url": "https://jaxels1.github.io/",
-            "description": "Open-source SKILL.md hub for tactile-ui, skill-sync, token-guard, and lookbook."
+            "description": "Open-source SKILL.md hub for tactile-ui, skill-sync, token-guard, lookbook, and snap."
           },
           {
             "@type": "ItemList",
@@ -92,6 +92,19 @@
                   "codeRepository": "https://github.com/jaxels1/lookbook",
                   "description": "Reference-first creative direction and technique research skill that extracts Visual + Reaction DNA and reverse-engineers 3D, shaders, and spring physics instead of faking them with flat CSS."
                 }
+              },
+              {
+                "@type": "ListItem",
+                "position": 5,
+                "item": {
+                  "@type": "SoftwareApplication",
+                  "name": "snap",
+                  "applicationCategory": "DeveloperApplication",
+                  "operatingSystem": "macOS, Windows, Linux",
+                  "url": "https://github.com/jaxels1/snap",
+                  "codeRepository": "https://github.com/jaxels1/snap",
+                  "description": "Silent per-turn Git shadow checkpoints (refs/snap/*) before AI coding agent edits, with turn debouncing and undoable undo."
+                }
               }
             ]
           }
@@ -128,6 +141,7 @@
           <a href="#skill-sync">skill-sync</a>
           <a href="#token-guard">token-guard</a>
           <a href="#lookbook">lookbook</a>
+          <a href="#snap">snap</a>
           <a href="https://github.com/jaxels1" target="_blank" rel="noreferrer">GitHub</a>
         </nav>
       </div>
@@ -174,6 +188,14 @@
               data-copy="npx skills add jaxels1/lookbook"
             >
               <code>npx skills add jaxels1/lookbook</code>
+              <span class="pill-state">Copy</span>
+            </button>
+            <button
+              type="button"
+              class="glass-pill copy-trigger"
+              data-copy="npx skills add jaxels1/snap"
+            >
+              <code>npx skills add jaxels1/snap</code>
               <span class="pill-state">Copy</span>
             </button>
           </div>
@@ -492,8 +514,91 @@
         </div>
       </section>
 
-      <!-- CHAPTER 5: Re-assembled Monolith Finale -->
-      <section id="install" class="chapter chapter-finale" data-chapter="5">
+      <!-- CHAPTER 5: snap (Left Frosted Glass Panel + Right 3D Rewind Sculpture) -->
+      <section id="snap" class="chapter chapter-split" data-chapter="5">
+        <div class="chapter-inner align-left">
+          <article class="glass-panel">
+            <div class="panel-head">
+              <h2>snap</h2>
+              <div class="panel-links">
+                <a href="https://github.com/jaxels1/snap" target="_blank" rel="noreferrer">GitHub</a>
+                <a href="https://github.com/jaxels1/snap/blob/main/SKILL.md" target="_blank" rel="noreferrer">Docs</a>
+              </div>
+            </div>
+
+            <p class="panel-copy">
+              Silent per-turn shadow checkpoints under hidden <code>refs/snap/*</code> using
+              isolated temporary Git indexes—captures tracked and untracked files without
+              touching <code>git status</code>, <code>git log</code>, or <code>git stash</code>.
+            </p>
+
+            <!-- Interactive Rewind Switcher driving 3D Voxel Rewind State -->
+            <div class="diff-block">
+              <div class="diff-bar">
+                <span class="diff-label">Turn checkpoint: refs/snap/*</span>
+                <div class="diff-tabs" role="group" aria-label="Switch snap state preview">
+                  <button type="button" class="diff-tab is-active" data-snap-mode="rewound">
+                    snap undo
+                  </button>
+                  <button type="button" class="diff-tab" data-snap-mode="rogue">
+                    Rogue Edit
+                  </button>
+                </div>
+              </div>
+
+              <div class="diff-surface">
+                <div class="diff-meta">
+                  <code id="snap-file">refs/snap/179550... → #1 (4a91f0c)</code>
+                  <span class="diff-count is-compressed" id="snap-count">git status clean</span>
+                </div>
+                <pre class="diff-pre" id="snap-pre"><code><span class="d-add-safe">✓ Restored auth.ts from turn #1 (pre-edit)</span>
+<span class="d-add-safe">✓ Removed post-checkpoint extra/junk.py</span>
+<span class="d-add-safe">✓ Saved pre-restore safety snap as #1 (undoable)</span>
+<span class="d-ctx">  git log / git stash list: 100% untouched</span></code></pre>
+                <div class="diff-verdict is-compressed" id="snap-verdict">
+                  <strong>Rewound cleanly · Even undo is undoable</strong>
+                  <code>python3 scripts/snap.py undo</code>
+                </div>
+              </div>
+            </div>
+
+            <div class="cmd-grid" aria-label="snap CLI commands">
+              <button type="button" class="cmd-btn copy-trigger" data-copy="python3 scripts/snap.py save">
+                <code>snap save</code>
+              </button>
+              <button type="button" class="cmd-btn copy-trigger" data-copy="python3 scripts/snap.py list">
+                <code>snap list</code>
+              </button>
+              <button type="button" class="cmd-btn copy-trigger" data-copy="python3 scripts/snap.py diff 1">
+                <code>snap diff 1</code>
+              </button>
+              <button type="button" class="cmd-btn copy-trigger" data-copy="python3 scripts/snap.py undo">
+                <code>snap undo</code>
+              </button>
+            </div>
+
+            <div class="media-box">
+              <img
+                src="https://raw.githubusercontent.com/jaxels1/snap/main/assets/demo.gif"
+                alt="snap silent Git shadow checkpoint and rewind demo"
+                loading="lazy"
+              />
+            </div>
+
+            <button
+              type="button"
+              class="glass-pill panel-copy-btn copy-trigger"
+              data-copy="npx skills add jaxels1/snap"
+            >
+              <code>npx skills add jaxels1/snap</code>
+              <span class="pill-state">Copy</span>
+            </button>
+          </article>
+        </div>
+      </section>
+
+      <!-- CHAPTER 6: Re-assembled Monolith Finale -->
+      <section id="install" class="chapter chapter-finale" data-chapter="6">
         <div class="finale-content">
           <h2>Install in one command.</h2>
           <div class="hero-pills">
@@ -529,6 +634,14 @@
               <code>npx skills add jaxels1/lookbook</code>
               <span class="pill-state">Copy</span>
             </button>
+            <button
+              type="button"
+              class="glass-pill copy-trigger"
+              data-copy="npx skills add jaxels1/snap"
+            >
+              <code>npx skills add jaxels1/snap</code>
+              <span class="pill-state">Copy</span>
+            </button>
           </div>
         </div>
 
@@ -540,11 +653,12 @@
             <a href="https://jaxels1.github.io/skill-sync/" target="_blank" rel="noreferrer">skill-sync</a>
             <a href="https://jaxels1.github.io/token-guard/" target="_blank" rel="noreferrer">token-guard</a>
             <a href="https://github.com/jaxels1/lookbook" target="_blank" rel="noreferrer">lookbook</a>
+            <a href="https://github.com/jaxels1/snap" target="_blank" rel="noreferrer">snap</a>
           </div>
         </footer>
       </section>
     </main>
 
-    <script type="module" src="./app.js?v=16"></script>
+    <script type="module" src="./app.js?v=17"></script>
   </body>
 </html>

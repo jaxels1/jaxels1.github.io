@@ -43,6 +43,7 @@ const state3D = {
   vaultSecure: false,
   guardFiltered: true,
   lookbookReal: true,
+  snapRewound: true,
   spinX: 0,
   spinY: 0,
   velSpinX: 0,
@@ -445,6 +446,7 @@ if (canvasEl) {
     const secSync = document.getElementById("skill-sync");
     const secGuard = document.getElementById("token-guard");
     const secLookbook = document.getElementById("lookbook");
+    const secSnap = document.getElementById("snap");
     const secFinale = document.getElementById("install");
 
     function getChapterWeights() {
@@ -456,7 +458,8 @@ if (canvasEl) {
       const c2 = centerOf(secSync);
       const c3 = centerOf(secGuard);
       const c4 = centerOf(secLookbook);
-      const c5 = Math.min(centerOf(secFinale), maxMidY - window.innerHeight * 0.06);
+      const c5 = centerOf(secSnap);
+      const c6 = Math.min(centerOf(secFinale), maxMidY - window.innerHeight * 0.06);
 
       const ease = (t) => t * t * (3 - 2 * t);
       const r01 = THREE.MathUtils.clamp((midY - c0) / Math.max(1, c1 - c0), 0, 1);
@@ -464,12 +467,14 @@ if (canvasEl) {
       const r23 = THREE.MathUtils.clamp((midY - c2) / Math.max(1, c3 - c2), 0, 1);
       const r34 = THREE.MathUtils.clamp((midY - c3) / Math.max(1, c4 - c3), 0, 1);
       const r45 = THREE.MathUtils.clamp((midY - c4) / Math.max(1, c5 - c4), 0, 1);
+      const r56 = THREE.MathUtils.clamp((midY - c5) / Math.max(1, c6 - c5), 0, 1);
 
       const t01 = ease(r01);
       const t12 = ease(r12);
       const t23 = ease(r23);
       const t34 = ease(r34);
       const t45 = ease(r45);
+      const t56 = ease(r56);
 
       return {
         wHero: 1 - t01,
@@ -477,7 +482,8 @@ if (canvasEl) {
         wSync: t12 * (1 - t23),
         wGuard: t23 * (1 - t34),
         wLookbook: t34 * (1 - t45),
-        wFinale: t45,
+        wSnap: t45 * (1 - t56),
+        wFinale: t56,
       };
     }
 
@@ -491,21 +497,21 @@ if (canvasEl) {
       const reduced = state3D.reduceMotion || prefersReduced();
       const desktop = window.innerWidth > 900;
 
-      const { wHero, wTactile, wSync, wGuard, wLookbook, wFinale } = getChapterWeights();
+      const { wHero, wTactile, wSync, wGuard, wLookbook, wSnap, wFinale } = getChapterWeights();
 
       const groupLerp = 1 - Math.exp(-5.5 * dt);
       const rotLerp = 1 - Math.exp(-6.5 * dt);
 
       const desiredGroupX = desktop
-        ? (wTactile + wGuard) * 1.95 - (wSync + wLookbook) * 1.95
+        ? (wTactile + wGuard + wSnap) * 1.95 - (wSync + wLookbook) * 1.95
         : 0;
       const desiredGroupY =
         wHero * 0.62 +
         wFinale * 0.54 +
         (reduced ? 0 : Math.sin(elapsed * 1.1) * 0.06 * (wHero + wFinale)) +
-        (desktop ? 0 : (wTactile + wSync + wGuard + wLookbook) * 1.15);
+        (desktop ? 0 : (wTactile + wSync + wGuard + wLookbook + wSnap) * 1.15);
       const desiredGroupZ =
-        (wHero + wFinale) * 0.30 - (wTactile + wSync + wGuard + wLookbook) * 0.22;
+        (wHero + wFinale) * 0.30 - (wTactile + wSync + wGuard + wLookbook + wSnap) * 0.22;
 
       rootGroup.position.x = THREE.MathUtils.lerp(rootGroup.position.x, desiredGroupX, groupLerp);
       rootGroup.position.y = THREE.MathUtils.lerp(rootGroup.position.y, desiredGroupY, groupLerp);
@@ -514,7 +520,7 @@ if (canvasEl) {
       if (!reduced) {
         state3D.spinY +=
           state3D.velSpinY +
-          dt * (0.26 + wTactile * 0.10 + wSync * 0.14 + wGuard * 0.12 + wLookbook * 0.14);
+          dt * (0.26 + wTactile * 0.10 + wSync * 0.14 + wGuard * 0.12 + wLookbook * 0.14 + wSnap * 0.12);
         state3D.spinX += state3D.velSpinX;
         state3D.velSpinY *= Math.exp(-4.5 * dt);
         state3D.velSpinX *= Math.exp(-4.5 * dt);
@@ -527,7 +533,9 @@ if (canvasEl) {
 
       // Dynamic inner tourbillon & core color
       let targetColor = vermilionColor;
-      if (wLookbook > 0.35 && state3D.lookbookReal) {
+      if (wSnap > 0.35 && state3D.snapRewound) {
+        targetColor = emeraldColor;
+      } else if (wLookbook > 0.35 && state3D.lookbookReal) {
         targetColor = amberColor;
       } else if (wGuard > 0.35 && state3D.guardFiltered) {
         targetColor = cyanColor;
@@ -538,7 +546,7 @@ if (canvasEl) {
       coreMat.emissive.copy(accentColor);
       coreLight.color.copy(accentColor);
 
-      const coreScale = 0.46 + Math.max(wTactile, wSync, wGuard, wLookbook) * 0.66;
+      const coreScale = 0.46 + Math.max(wTactile, wSync, wGuard, wLookbook, wSnap) * 0.66;
       coreAssembly.scale.setScalar(coreScale);
       if (!reduced) {
         gimbalA.rotation.x += dt * 0.9;
@@ -550,19 +558,24 @@ if (canvasEl) {
       vaultHalo.material.opacity =
         wSync * 0.28 +
         wGuard * (state3D.guardFiltered ? 0.16 : 0) +
-        wLookbook * (state3D.lookbookReal ? 0.24 : 0);
+        wLookbook * (state3D.lookbookReal ? 0.24 : 0) +
+        wSnap * (state3D.snapRewound ? 0.22 : 0);
       vaultHalo.scale.setScalar(
-        wLookbook > wGuard && wLookbook > wSync
-          ? state3D.lookbookReal
-            ? 1.08
-            : 0.75
-          : wGuard > wSync
-            ? state3D.guardFiltered
-              ? 0.86
-              : 1.25
-            : state3D.vaultSecure
-              ? 1.14
-              : 0.94
+        wSnap > wLookbook
+          ? state3D.snapRewound
+            ? 0.92
+            : 1.32
+          : wLookbook > wGuard && wLookbook > wSync
+            ? state3D.lookbookReal
+              ? 1.08
+              : 0.75
+            : wGuard > wSync
+              ? state3D.guardFiltered
+                ? 0.86
+                : 1.25
+              : state3D.vaultSecure
+                ? 1.14
+                : 0.94
       );
 
       if (!reduced) {
@@ -588,7 +601,7 @@ if (canvasEl) {
       const tierR = state3D.vaultSecure ? 1.95 : 1.62;
       const tierY = state3D.vaultSecure ? 1.06 : 0.96;
       const capY = state3D.vaultSecure ? 1.82 : 1.66;
-      const wOpen = wTactile + wSync + wGuard + wLookbook;
+      const wOpen = wTactile + wSync + wGuard + wLookbook + wSnap;
 
       for (let i = 0; i < voxels.length; i++) {
         const v = voxels[i];
@@ -640,24 +653,44 @@ if (canvasEl) {
           }
         }
 
+        // Snap shadow checkpoint prism (cleanly rewound detent block vs rogue edit drift)
+        let vxSnap = 0;
+        let vySnap = 0;
+        let vzSnap = 0;
+        if (wSnap > 0.001) {
+          if (state3D.snapRewound) {
+            vxSnap = v.home.x * 1.42;
+            vySnap = v.home.y * 1.42;
+            vzSnap = v.home.z * 1.42;
+          } else {
+            const drift = reduced ? 0 : Math.sin(elapsed * 2.3 + v.phase) * 0.34;
+            vxSnap = v.exploded.x * 0.95 + Math.cos(v.phase * 1.7) * 0.25;
+            vySnap = v.exploded.y * 0.95 + drift;
+            vzSnap = v.exploded.z * 0.95 + Math.sin(v.phase * 1.3) * 0.25;
+          }
+        }
+
         const baseX =
           v.home.x * (wHero + wFinale) +
           v.exploded.x * wTactile +
           vxOrb * wSync +
           vxGuard * wGuard +
-          vxLook * wLookbook;
+          vxLook * wLookbook +
+          vxSnap * wSnap;
         const baseY =
           v.home.y * (wHero + wFinale) +
           v.exploded.y * wTactile +
           vyOrb * wSync +
           vyGuard * wGuard +
-          vyLook * wLookbook;
+          vyLook * wLookbook +
+          vySnap * wSnap;
         const baseZ =
           v.home.z * (wHero + wFinale) +
           v.exploded.z * wTactile +
           vzOrb * wSync +
           vzGuard * wGuard +
-          vzLook * wLookbook;
+          vzLook * wLookbook +
+          vzSnap * wSnap;
 
         const tierAng = v.tier === 0 ? midTierAngle : outerTierAngle;
         const cT = Math.cos(tierAng);
@@ -908,5 +941,55 @@ lookbookTabs.forEach((btn) => {
     lookbookPre.innerHTML = `<code>${m.codeHtml}</code>`;
     lookbookVerdict.className = `diff-verdict ${m.real ? "is-compressed" : "is-blocked"}`;
     lookbookVerdict.innerHTML = `<strong>${m.verdictText}</strong><code>${m.verdictMeta}</code>`;
+  });
+});
+
+const SNAP_MODES = {
+  rewound: {
+    file: "refs/snap/179550... → #1 (4a91f0c)",
+    countText: "git status clean",
+    rewound: true,
+    codeHtml:
+      `<span class="d-add-safe">✓ Restored auth.ts from turn #1 (pre-edit)</span>\n` +
+      `<span class="d-add-safe">✓ Removed post-checkpoint extra/junk.py</span>\n` +
+      `<span class="d-add-safe">✓ Saved pre-restore safety snap as #1 (undoable)</span>\n` +
+      `<span class="d-ctx">  git log / git stash list: 100% untouched</span>`,
+    verdictText: "Rewound cleanly · Even undo is undoable",
+    verdictMeta: "python3 scripts/snap.py undo",
+  },
+  rogue: {
+    file: "working-tree (uncommitted + 7 edits)",
+    countText: "7 rogue edits",
+    rewound: false,
+    codeHtml:
+      `<span class="d-add-risk">- deleted verifyToken() inside auth.ts</span>\n` +
+      `<span class="d-add-risk">+ extra/junk.py (created outside task scope)</span>\n` +
+      `<span class="d-add-risk">+ broke 4 imports before you committed</span>\n` +
+      `<span class="d-ctx">  Without snap, uncommitted edits are tangled</span>`,
+    verdictText: "PreToolUse already saved #1 before edits ran",
+    verdictMeta: "snap diff 1",
+  },
+};
+
+const snapTabs = document.querySelectorAll("[data-snap-mode]");
+const snapFile = document.getElementById("snap-file");
+const snapCount = document.getElementById("snap-count");
+const snapPre = document.getElementById("snap-pre");
+const snapVerdict = document.getElementById("snap-verdict");
+
+snapTabs.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const modeKey = btn.dataset.snapMode;
+    const s = SNAP_MODES[modeKey];
+    if (!s) return;
+    state3D.snapRewound = s.rewound;
+    trigger3DPulse(6.5);
+    snapTabs.forEach((t) => t.classList.toggle("is-active", t === btn));
+    snapFile.textContent = s.file;
+    snapCount.textContent = s.countText;
+    snapCount.className = `diff-count ${s.rewound ? "is-compressed" : "is-blocked"}`;
+    snapPre.innerHTML = `<code>${s.codeHtml}</code>`;
+    snapVerdict.className = `diff-verdict ${s.rewound ? "is-compressed" : "is-blocked"}`;
+    snapVerdict.innerHTML = `<strong>${s.verdictText}</strong><code>${s.verdictMeta}</code>`;
   });
 });

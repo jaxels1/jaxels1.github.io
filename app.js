@@ -42,6 +42,7 @@ const state3D = {
   reduceMotion: false,
   vaultSecure: false,
   guardFiltered: true,
+  lookbookReal: true,
   spinX: 0,
   spinY: 0,
   velSpinX: 0,
@@ -212,6 +213,7 @@ if (canvasEl) {
     const vermilionColor = new THREE.Color(0xe84a27);
     const emeraldColor = new THREE.Color(0x10b981);
     const cyanColor = new THREE.Color(0x38bdf8);
+    const amberColor = new THREE.Color(0xf59e0b);
 
     const coreLight = new THREE.PointLight(0xe84a27, 9, 13, 1.4);
     scene.add(coreLight);
@@ -442,6 +444,7 @@ if (canvasEl) {
     const secTactile = document.getElementById("tactile-ui");
     const secSync = document.getElementById("skill-sync");
     const secGuard = document.getElementById("token-guard");
+    const secLookbook = document.getElementById("lookbook");
     const secFinale = document.getElementById("install");
 
     function getChapterWeights() {
@@ -452,25 +455,29 @@ if (canvasEl) {
       const c1 = centerOf(secTactile);
       const c2 = centerOf(secSync);
       const c3 = centerOf(secGuard);
-      const c4 = Math.min(centerOf(secFinale), maxMidY - window.innerHeight * 0.06);
+      const c4 = centerOf(secLookbook);
+      const c5 = Math.min(centerOf(secFinale), maxMidY - window.innerHeight * 0.06);
 
       const ease = (t) => t * t * (3 - 2 * t);
       const r01 = THREE.MathUtils.clamp((midY - c0) / Math.max(1, c1 - c0), 0, 1);
       const r12 = THREE.MathUtils.clamp((midY - c1) / Math.max(1, c2 - c1), 0, 1);
       const r23 = THREE.MathUtils.clamp((midY - c2) / Math.max(1, c3 - c2), 0, 1);
       const r34 = THREE.MathUtils.clamp((midY - c3) / Math.max(1, c4 - c3), 0, 1);
+      const r45 = THREE.MathUtils.clamp((midY - c4) / Math.max(1, c5 - c4), 0, 1);
 
       const t01 = ease(r01);
       const t12 = ease(r12);
       const t23 = ease(r23);
       const t34 = ease(r34);
+      const t45 = ease(r45);
 
       return {
         wHero: 1 - t01,
         wTactile: t01 * (1 - t12),
         wSync: t12 * (1 - t23),
         wGuard: t23 * (1 - t34),
-        wFinale: t34,
+        wLookbook: t34 * (1 - t45),
+        wFinale: t45,
       };
     }
 
@@ -484,18 +491,21 @@ if (canvasEl) {
       const reduced = state3D.reduceMotion || prefersReduced();
       const desktop = window.innerWidth > 900;
 
-      const { wHero, wTactile, wSync, wGuard, wFinale } = getChapterWeights();
+      const { wHero, wTactile, wSync, wGuard, wLookbook, wFinale } = getChapterWeights();
 
       const groupLerp = 1 - Math.exp(-5.5 * dt);
       const rotLerp = 1 - Math.exp(-6.5 * dt);
 
-      const desiredGroupX = desktop ? (wTactile + wGuard) * 1.95 - wSync * 1.95 : 0;
+      const desiredGroupX = desktop
+        ? (wTactile + wGuard) * 1.95 - (wSync + wLookbook) * 1.95
+        : 0;
       const desiredGroupY =
         wHero * 0.62 +
         wFinale * 0.54 +
         (reduced ? 0 : Math.sin(elapsed * 1.1) * 0.06 * (wHero + wFinale)) +
-        (desktop ? 0 : (wTactile + wSync + wGuard) * 1.15);
-      const desiredGroupZ = (wHero + wFinale) * 0.30 - (wTactile + wSync + wGuard) * 0.22;
+        (desktop ? 0 : (wTactile + wSync + wGuard + wLookbook) * 1.15);
+      const desiredGroupZ =
+        (wHero + wFinale) * 0.30 - (wTactile + wSync + wGuard + wLookbook) * 0.22;
 
       rootGroup.position.x = THREE.MathUtils.lerp(rootGroup.position.x, desiredGroupX, groupLerp);
       rootGroup.position.y = THREE.MathUtils.lerp(rootGroup.position.y, desiredGroupY, groupLerp);
@@ -503,7 +513,8 @@ if (canvasEl) {
 
       if (!reduced) {
         state3D.spinY +=
-          state3D.velSpinY + dt * (0.26 + wTactile * 0.10 + wSync * 0.14 + wGuard * 0.12);
+          state3D.velSpinY +
+          dt * (0.26 + wTactile * 0.10 + wSync * 0.14 + wGuard * 0.12 + wLookbook * 0.14);
         state3D.spinX += state3D.velSpinX;
         state3D.velSpinY *= Math.exp(-4.5 * dt);
         state3D.velSpinX *= Math.exp(-4.5 * dt);
@@ -516,7 +527,9 @@ if (canvasEl) {
 
       // Dynamic inner tourbillon & core color
       let targetColor = vermilionColor;
-      if (wGuard > 0.35 && state3D.guardFiltered) {
+      if (wLookbook > 0.35 && state3D.lookbookReal) {
+        targetColor = amberColor;
+      } else if (wGuard > 0.35 && state3D.guardFiltered) {
         targetColor = cyanColor;
       } else if (wSync > 0.35 && state3D.vaultSecure) {
         targetColor = emeraldColor;
@@ -525,7 +538,7 @@ if (canvasEl) {
       coreMat.emissive.copy(accentColor);
       coreLight.color.copy(accentColor);
 
-      const coreScale = 0.46 + Math.max(wTactile, wSync, wGuard) * 0.66;
+      const coreScale = 0.46 + Math.max(wTactile, wSync, wGuard, wLookbook) * 0.66;
       coreAssembly.scale.setScalar(coreScale);
       if (!reduced) {
         gimbalA.rotation.x += dt * 0.9;
@@ -534,15 +547,22 @@ if (canvasEl) {
         gimbalC.rotation.z += dt * 0.7;
       }
 
-      vaultHalo.material.opacity = wSync * 0.28 + wGuard * (state3D.guardFiltered ? 0.16 : 0);
+      vaultHalo.material.opacity =
+        wSync * 0.28 +
+        wGuard * (state3D.guardFiltered ? 0.16 : 0) +
+        wLookbook * (state3D.lookbookReal ? 0.24 : 0);
       vaultHalo.scale.setScalar(
-        wGuard > wSync
-          ? state3D.guardFiltered
-            ? 0.86
-            : 1.25
-          : state3D.vaultSecure
-            ? 1.14
-            : 0.94
+        wLookbook > wGuard && wLookbook > wSync
+          ? state3D.lookbookReal
+            ? 1.08
+            : 0.75
+          : wGuard > wSync
+            ? state3D.guardFiltered
+              ? 0.86
+              : 1.25
+            : state3D.vaultSecure
+              ? 1.14
+              : 0.94
       );
 
       if (!reduced) {
@@ -568,7 +588,7 @@ if (canvasEl) {
       const tierR = state3D.vaultSecure ? 1.95 : 1.62;
       const tierY = state3D.vaultSecure ? 1.06 : 0.96;
       const capY = state3D.vaultSecure ? 1.82 : 1.66;
-      const wOpen = wTactile + wSync + wGuard;
+      const wOpen = wTactile + wSync + wGuard + wLookbook;
 
       for (let i = 0; i < voxels.length; i++) {
         const v = voxels[i];
@@ -603,12 +623,41 @@ if (canvasEl) {
           }
         }
 
+        // Lookbook reference prism (staggered sculptural fan vs flat collapsed grid)
+        let vxLook = 0;
+        let vyLook = 0;
+        let vzLook = 0;
+        if (wLookbook > 0.001) {
+          if (state3D.lookbookReal) {
+            const wave = reduced ? 0 : Math.sin(elapsed * 1.6 + v.phase) * 0.16;
+            vxLook = v.dir.x * 1.88;
+            vyLook = v.home.y * 1.68 + wave;
+            vzLook = v.dir.z * 1.88;
+          } else {
+            vxLook = v.home.x * 1.18;
+            vyLook = v.home.y * 0.85;
+            vzLook = v.home.z * 1.18;
+          }
+        }
+
         const baseX =
-          v.home.x * (wHero + wFinale) + v.exploded.x * wTactile + vxOrb * wSync + vxGuard * wGuard;
+          v.home.x * (wHero + wFinale) +
+          v.exploded.x * wTactile +
+          vxOrb * wSync +
+          vxGuard * wGuard +
+          vxLook * wLookbook;
         const baseY =
-          v.home.y * (wHero + wFinale) + v.exploded.y * wTactile + vyOrb * wSync + vyGuard * wGuard;
+          v.home.y * (wHero + wFinale) +
+          v.exploded.y * wTactile +
+          vyOrb * wSync +
+          vyGuard * wGuard +
+          vyLook * wLookbook;
         const baseZ =
-          v.home.z * (wHero + wFinale) + v.exploded.z * wTactile + vzOrb * wSync + vzGuard * wGuard;
+          v.home.z * (wHero + wFinale) +
+          v.exploded.z * wTactile +
+          vzOrb * wSync +
+          vzGuard * wGuard +
+          vzLook * wLookbook;
 
         const tierAng = v.tier === 0 ? midTierAngle : outerTierAngle;
         const cT = Math.cos(tierAng);
@@ -649,10 +698,10 @@ if (canvasEl) {
           const gzSpin = state3D.guardFiltered ? 0 : v.spinTactile.z * 1.25;
 
           const wx =
-            (v.spinTactile.x * wTactile + 0.35 * v.spinVaultDir * wSync + gxSpin * wGuard) * spinWeight +
+            (v.spinTactile.x * wTactile + 0.35 * v.spinVaultDir * wSync + gxSpin * wGuard + (state3D.lookbookReal ? 0.28 : 0.04) * v.spinTactile.x * wLookbook) * spinWeight +
             v.rotVel.x * rotFactor;
           const wy =
-            (v.spinTactile.y * wTactile + 0.90 * v.spinVaultDir * wSync + gySpin * wGuard) * spinWeight +
+            (v.spinTactile.y * wTactile + 0.90 * v.spinVaultDir * wSync + gySpin * wGuard + (state3D.lookbookReal ? 0.55 : 0.08) * v.spinVaultDir * wLookbook) * spinWeight +
             v.rotVel.y * rotFactor;
           const wz =
             (v.spinTactile.z * wTactile + 0.22 * v.spinVaultDir * wSync + gzSpin * wGuard) * spinWeight +
@@ -809,5 +858,55 @@ guardTabs.forEach((btn) => {
     guardPre.innerHTML = `<code>${g.codeHtml}</code>`;
     guardVerdict.className = `diff-verdict ${g.compressed ? "is-compressed" : "is-blocked"}`;
     guardVerdict.innerHTML = `<strong>${g.verdictText}</strong><code>${g.verdictMeta}</code>`;
+  });
+});
+
+const LOOKBOOK_MODES = {
+  real: {
+    file: "references/techniques.md",
+    countText: "Visual + Reaction DNA",
+    real: true,
+    codeHtml:
+      `<span class="d-add-safe">✓ 3D Glass: MeshPhysicalMaterial(ior: 1.45) + HDRI</span>\n` +
+      `<span class="d-add-safe">✓ Motion: rAF damped spring F = -k(x - t) - c*v</span>\n` +
+      `<span class="d-add-safe">✓ Surface: SVG feTurbulence + pointer specular rim</span>\n` +
+      `<span class="d-ctx">  Banned: purple SaaS glow, generic bento, ease 0.3s</span>`,
+    verdictText: "Matches how the reference looks and reacts",
+    verdictMeta: "SKILL.md + techniques.md",
+  },
+  fake: {
+    file: "default-ai-slop.css",
+    countText: "3 faked effects",
+    real: false,
+    codeHtml:
+      `<span class="d-add-risk">+ background: rgba(255,255,255,0.1); blur(10px);</span>\n` +
+      `<span class="d-add-risk">+ transition: all 0.3s ease; /* stiff linear */</span>\n` +
+      `<span class="d-add-risk">+ box-shadow: 0 0 24px purple; /* flat box */</span>\n` +
+      `<span class="d-ctx">  Skipped reference lookup — downgraded to flat CSS</span>`,
+    verdictText: "Looks flat and reacts nothing like the reference",
+    verdictMeta: "first average",
+  },
+};
+
+const lookbookTabs = document.querySelectorAll("[data-lookbook-mode]");
+const lookbookFile = document.getElementById("lookbook-file");
+const lookbookCount = document.getElementById("lookbook-count");
+const lookbookPre = document.getElementById("lookbook-pre");
+const lookbookVerdict = document.getElementById("lookbook-verdict");
+
+lookbookTabs.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const modeKey = btn.dataset.lookbookMode;
+    const m = LOOKBOOK_MODES[modeKey];
+    if (!m) return;
+    state3D.lookbookReal = m.real;
+    trigger3DPulse(6.5);
+    lookbookTabs.forEach((t) => t.classList.toggle("is-active", t === btn));
+    lookbookFile.textContent = m.file;
+    lookbookCount.textContent = m.countText;
+    lookbookCount.className = `diff-count ${m.real ? "is-compressed" : "is-blocked"}`;
+    lookbookPre.innerHTML = `<code>${m.codeHtml}</code>`;
+    lookbookVerdict.className = `diff-verdict ${m.real ? "is-compressed" : "is-blocked"}`;
+    lookbookVerdict.innerHTML = `<strong>${m.verdictText}</strong><code>${m.verdictMeta}</code>`;
   });
 });

@@ -7,14 +7,14 @@
     <title>jaxels — Agent skills, machined.</title>
     <meta
       name="description"
-      content="Open-source SKILL.md agent skills by jaxels1 for Claude Code, OpenAI Codex, Cursor, Antigravity, and Gemini CLI: tactile-ui (interruptible spring physics and defensive CSS), skill-sync (pre-pull security-gated updates), and token-guard (5-layer token & AI-usage defense)."
+      content="Open-source SKILL.md agent skills by jaxels1 for Claude Code, OpenAI Codex, Cursor, Antigravity, and Gemini CLI: tactile-ui, skill-sync, token-guard, and lookbook."
     />
     <link rel="canonical" href="https://jaxels1.github.io/" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="jaxels — Agent skills, machined." />
     <meta
       property="og:description"
-      content="Interactive 3D showcase for tactile-ui, skill-sync, and token-guard: spring physics, security-gated updates, and 5-layer token defense."
+      content="Interactive 3D showcase for tactile-ui, skill-sync, token-guard, and lookbook."
     />
     <meta property="og:url" content="https://jaxels1.github.io/" />
     <meta
@@ -27,7 +27,7 @@
       href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=15" />
+    <link rel="stylesheet" href="./styles.css?v=16" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -36,7 +36,7 @@
             "@type": "WebSite",
             "name": "jaxels",
             "url": "https://jaxels1.github.io/",
-            "description": "Open-source SKILL.md hub for tactile-ui and skill-sync."
+            "description": "Open-source SKILL.md hub for tactile-ui, skill-sync, token-guard, and lookbook."
           },
           {
             "@type": "ItemList",
@@ -77,7 +77,20 @@
                   "operatingSystem": "macOS, Windows, Linux",
                   "url": "https://jaxels1.github.io/token-guard/",
                   "codeRepository": "https://github.com/jaxels1/token-guard",
-                  "description": "5-layer cross-agent token optimizer with duplicate/unbounded read guard, noisy command stdout compressor, cache-safe SKILL.md, and JSONL transcript auditor."
+                  "description": "Zero-dependency PreToolUse hooks and SKILL.md for duplicate/unbounded read guarding, noisy command stdout filtering, and JSONL transcript auditing."
+                }
+              },
+              {
+                "@type": "ListItem",
+                "position": 4,
+                "item": {
+                  "@type": "SoftwareApplication",
+                  "name": "lookbook",
+                  "applicationCategory": "DeveloperApplication",
+                  "operatingSystem": "macOS, Windows, Linux",
+                  "url": "https://github.com/jaxels1/lookbook",
+                  "codeRepository": "https://github.com/jaxels1/lookbook",
+                  "description": "Reference-first creative direction and technique research skill that extracts Visual + Reaction DNA and reverse-engineers 3D, shaders, and spring physics instead of faking them with flat CSS."
                 }
               }
             ]
@@ -114,6 +127,7 @@
           <a href="#tactile-ui">tactile-ui</a>
           <a href="#skill-sync">skill-sync</a>
           <a href="#token-guard">token-guard</a>
+          <a href="#lookbook">lookbook</a>
           <a href="https://github.com/jaxels1" target="_blank" rel="noreferrer">GitHub</a>
         </nav>
       </div>
@@ -152,6 +166,14 @@
               data-copy="npx skills add jaxels1/token-guard"
             >
               <code>npx skills add jaxels1/token-guard</code>
+              <span class="pill-state">Copy</span>
+            </button>
+            <button
+              type="button"
+              class="glass-pill copy-trigger"
+              data-copy="npx skills add jaxels1/lookbook"
+            >
+              <code>npx skills add jaxels1/lookbook</code>
               <span class="pill-state">Copy</span>
             </button>
           </div>
@@ -387,8 +409,91 @@
         </div>
       </section>
 
-      <!-- CHAPTER 4: Re-assembled Monolith Finale -->
-      <section id="install" class="chapter chapter-finale" data-chapter="4">
+      <!-- CHAPTER 4: lookbook (Right Frosted Glass Panel + Left 3D Gallery Prism) -->
+      <section id="lookbook" class="chapter chapter-split" data-chapter="4">
+        <div class="chapter-inner align-right">
+          <article class="glass-panel">
+            <div class="panel-head">
+              <h2>lookbook</h2>
+              <div class="panel-links">
+                <a href="https://github.com/jaxels1/lookbook" target="_blank" rel="noreferrer">GitHub</a>
+                <a href="https://github.com/jaxels1/lookbook/blob/main/references/techniques.md" target="_blank" rel="noreferrer">Techniques</a>
+              </div>
+            </div>
+
+            <p class="panel-copy">
+              Forces coding agents to pull real non-AI references, ban the top 3 clichés,
+              and reverse-engineer <strong>how</strong> signature effects (3D/WebGL, shaders,
+              springs, SVG grain) work instead of faking them with flat CSS.
+            </p>
+
+            <!-- Interactive Technique Switcher driving 3D Gallery Arrangement -->
+            <div class="diff-block">
+              <div class="diff-bar">
+                <span class="diff-label">Technique check: look + react</span>
+                <div class="diff-tabs" role="group" aria-label="Switch lookbook mode">
+                  <button type="button" class="diff-tab is-active" data-lookbook-mode="real">
+                    Real Technique
+                  </button>
+                  <button type="button" class="diff-tab" data-lookbook-mode="fake">
+                    AI Fake CSS
+                  </button>
+                </div>
+              </div>
+
+              <div class="diff-surface">
+                <div class="diff-meta">
+                  <code id="lookbook-file">references/techniques.md</code>
+                  <span class="diff-count is-compressed" id="lookbook-count">Visual + Reaction DNA</span>
+                </div>
+                <pre class="diff-pre" id="lookbook-pre"><code><span class="d-add-safe">✓ 3D Glass: MeshPhysicalMaterial(ior: 1.45) + HDRI</span>
+<span class="d-add-safe">✓ Motion: rAF damped spring F = -k(x - t) - c*v</span>
+<span class="d-add-safe">✓ Surface: SVG feTurbulence + pointer specular rim</span>
+<span class="d-ctx">  Banned: purple SaaS glow, generic bento, ease 0.3s</span></code></pre>
+                <div class="diff-verdict is-compressed" id="lookbook-verdict">
+                  <strong>Matches how the reference looks and reacts</strong>
+                  <code>SKILL.md + techniques.md</code>
+                </div>
+              </div>
+            </div>
+
+            <div class="cmd-grid" aria-label="lookbook phases">
+              <button type="button" class="cmd-btn copy-trigger" data-copy="Pull 3-5 real references">
+                <code>3-5 refs</code>
+              </button>
+              <button type="button" class="cmd-btn copy-trigger" data-copy="Ban top 3 AI cliches">
+                <code>no clichés</code>
+              </button>
+              <button type="button" class="cmd-btn copy-trigger" data-copy="Extract Visual + Reaction DNA">
+                <code>DNA spec</code>
+              </button>
+              <button type="button" class="cmd-btn copy-trigger" data-copy="npx skills add jaxels1/lookbook">
+                <code>4 phases</code>
+              </button>
+            </div>
+
+            <div class="media-box">
+              <img
+                src="https://raw.githubusercontent.com/jaxels1/lookbook/main/assets/demo.gif"
+                alt="lookbook reference-first creative direction and technique research demo"
+                loading="lazy"
+              />
+            </div>
+
+            <button
+              type="button"
+              class="glass-pill panel-copy-btn copy-trigger"
+              data-copy="npx skills add jaxels1/lookbook"
+            >
+              <code>npx skills add jaxels1/lookbook</code>
+              <span class="pill-state">Copy</span>
+            </button>
+          </article>
+        </div>
+      </section>
+
+      <!-- CHAPTER 5: Re-assembled Monolith Finale -->
+      <section id="install" class="chapter chapter-finale" data-chapter="5">
         <div class="finale-content">
           <h2>Install in one command.</h2>
           <div class="hero-pills">
@@ -416,6 +521,14 @@
               <code>npx skills add jaxels1/token-guard</code>
               <span class="pill-state">Copy</span>
             </button>
+            <button
+              type="button"
+              class="glass-pill copy-trigger"
+              data-copy="npx skills add jaxels1/lookbook"
+            >
+              <code>npx skills add jaxels1/lookbook</code>
+              <span class="pill-state">Copy</span>
+            </button>
           </div>
         </div>
 
@@ -426,11 +539,12 @@
             <a href="https://jaxels1.github.io/tactile-ui/" target="_blank" rel="noreferrer">tactile-ui</a>
             <a href="https://jaxels1.github.io/skill-sync/" target="_blank" rel="noreferrer">skill-sync</a>
             <a href="https://jaxels1.github.io/token-guard/" target="_blank" rel="noreferrer">token-guard</a>
+            <a href="https://github.com/jaxels1/lookbook" target="_blank" rel="noreferrer">lookbook</a>
           </div>
         </footer>
       </section>
     </main>
 
-    <script type="module" src="./app.js?v=15"></script>
+    <script type="module" src="./app.js?v=16"></script>
   </body>
 </html>
